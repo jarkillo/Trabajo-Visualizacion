@@ -1,0 +1,38 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:latest
+    container_name: db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: phishing_db
+    volumes:
+      - ./data:/data
+    ports:
+      - "5432:5432"
+
+  data_loader:
+    build: .
+    container_name: data_loader
+    depends_on:
+      - db
+    volumes:
+      - ./data:/data
+      - ./scripts:/scripts
+    command: python /scripts/load_data.py
+
+  streamlit:
+    build: .
+    container_name: streamlit_app
+    depends_on:
+      - db
+      - data_loader
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/phishing_db
+    volumes:
+      - ./streamlit:/app
+    ports:
+      - "8501:8501"
+    command: /bin/sh -c "sleep 10 && streamlit run /app/app.py --server.port 8501 --server.headless true"
