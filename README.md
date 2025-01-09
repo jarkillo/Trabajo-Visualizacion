@@ -11,7 +11,7 @@ Este proyecto consiste en un tablero interactivo de visualización de datos desa
 
 ```bash
 git clone https://github.com/jarkillo/Trabajo-Visualizacion.git
-cd tu_repositorio
+cd Trabajo-Visualizacion
 docker-compose up --build
 ```
 
