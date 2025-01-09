@@ -30,18 +30,19 @@ Abre tu navegador y accede al tablero en: [http://localhost:8501](http://localho
 
 ## 📁 Estructura del proyecto
 
+```plaintext
 phishing-visualizacion/
 ├── data/
-│   ├── phishing_data.csv    # Conjunto de datos CSV
+│   ├── phishing_data.csv        # Conjunto de datos CSV
 ├── scripts/
-│   ├── load_data.py         # Script para cargar el CSV en la base de datos
+│   ├── load_data.py             # Script para cargar el CSV en la base de datos
 ├── streamlit/
-│   ├── app.py               # Código del tablero de Streamlit
-├── requirements.txt         # Dependencias necesarias para Python
-├── Dockerfile               # Configuración del contenedor
-├── docker-compose.yml       # Orquestación de servicios (DB, Streamlit)
-└── README.md                # Documentación del proyecto
-
+│   ├── app.py                   # Código del tablero de Streamlit
+├── requirements.txt             # Dependencias necesarias para Python
+├── Dockerfile                   # Configuración del contenedor
+├── docker-compose.yml           # Orquestación de servicios (DB, Streamlit)
+└── README.md                    # Documentación del proyecto
+```
 
 ## ⚙️ Configuración adicional
 
