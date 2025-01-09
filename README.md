@@ -10,7 +10,7 @@ Este proyecto consiste en un tablero interactivo de visualización de datos desa
 ### Instrucciones
 
 ```bash
-git clone https://github.com/tu_usuario/phishing-visualizacion.git
+git clone https://github.com/jarkillo/Trabajo-Visualizacion.git
 cd tu_repositorio
 docker-compose up --build
 ```
