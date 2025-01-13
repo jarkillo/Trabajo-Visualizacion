@@ -2,6 +2,8 @@ import os
 from sqlalchemy import create_engine
 import pandas as pd
 import streamlit as st
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # Leer la URL de la base de datos desde las variables de entorno
 db_url = os.getenv("DATABASE_URL")
@@ -27,12 +29,28 @@ try:
     with main_tab[0]:
         st.header("Exploración de Sintaxis")
 
-        syntax_tab = st.tabs(["Gráfico 1", "Gráfico 2", "Gráfico 3"])
+        syntax_tab = st.tabs(["Gráfico 1", "Gráfico 2", "Gráfico 3", "Gráfico 4"])
 
         # Subpestaña Gráfico 1
         with syntax_tab[0]:
-            st.subheader("Gráfico 1")
-            st.write("Aquí irá el primer gráfico de sintaxis")
+            st.subheader("Mapa de Calor de Correlaciones")
+            st.write("Mapa de calor que muestra las correlaciones entre las variables seleccionadas y la variable objetivo (status).")
+
+            # Seleccionar variables de interés
+            selected_columns = [
+                'nb_www', 'length_url', 'nb_slash', 'nb_dots', 'nb_hyphens',
+                'nb_qm', 'ratio_digits_url', 'shortest_word_host', 'longest_words_raw',
+                'longest_word_host', 'shortest_words_raw', 'length_hostname',
+                'shortest_word_path', 'phish_hints', 'char_repeat', 'status'
+            ]
+
+            # Filtrar datos
+            correlation_data = data[selected_columns].corr()
+
+            # Crear el mapa de calor
+            fig, ax = plt.subplots(figsize=(10, 8))
+            sns.heatmap(correlation_data, annot=True, fmt=".2f", cmap="coolwarm", ax=ax)
+            st.pyplot(fig)
 
         # Subpestaña Gráfico 2
         with syntax_tab[1]:
@@ -43,6 +61,12 @@ try:
         with syntax_tab[2]:
             st.subheader("Gráfico 3")
             st.write("Aquí irá el tercer gráfico de sintaxis")
+
+        # Subpestaña Gráfico 4
+        with syntax_tab[2]:
+            st.subheader("Gráfico 4")
+            st.write("Aquí irá el tercer gráfico de sintaxis")
+
 
     # Pestaña Contenido
     with main_tab[1]:
@@ -75,7 +99,6 @@ try:
         with external_tab[0]:
             st.subheader("Gráfico 1")
             st.write("Aquí irá el primer gráfico de consultas externas")
-            
 
         # Subpestaña Gráfico 2
         with external_tab[1]:

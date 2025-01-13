@@ -36,3 +36,11 @@ services:
     ports:
       - "8501:8501"
     command: /bin/sh -c "sleep 10 && streamlit run /app/app.py --server.port 8501 --server.headless true"
+    restart: always
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 5
