@@ -31,26 +31,33 @@ try:
 
         syntax_tab = st.tabs(["Gráfico 1", "Gráfico 2", "Gráfico 3", "Gráfico 4"])
 
-        # Subpestaña Gráfico 1
+                # Subpestaña Gráfico 1
         with syntax_tab[0]:
-            st.subheader("Mapa de Calor de Correlaciones")
-            st.write("Mapa de calor que muestra las correlaciones entre las variables seleccionadas y la variable objetivo (status).")
+            st.subheader("Mapa de Calor Interactivo de Correlaciones")
+            st.write("Selecciona las variables para generar un mapa de calor dinámico que muestra las correlaciones con la variable objetivo (status).")
 
-            # Seleccionar variables de interés
-            selected_columns = [
+            # Selección de variables
+            variables = [
                 'nb_www', 'length_url', 'nb_slash', 'nb_dots', 'nb_hyphens',
                 'nb_qm', 'ratio_digits_url', 'shortest_word_host', 'longest_words_raw',
                 'longest_word_host', 'shortest_words_raw', 'length_hostname',
-                'shortest_word_path', 'phish_hints', 'char_repeat', 'status'
+                'shortest_word_path', 'phish_hints', 'char_repeat'
             ]
+            selected_vars = st.multiselect("Selecciona variables:", variables, default=variables)
 
-            # Filtrar datos
-            correlation_data = data[selected_columns].corr()
+            if selected_vars:
+                # Añadir la variable objetivo
+                selected_columns = selected_vars + ['status']
 
-            # Crear el mapa de calor
-            fig, ax = plt.subplots(figsize=(10, 8))
-            sns.heatmap(correlation_data, annot=True, fmt=".2f", cmap="coolwarm", ax=ax)
-            st.pyplot(fig)
+                # Calcular correlaciones
+                correlation_data = data[selected_columns].corr()
+
+                # Crear el mapa de calor
+                fig, ax = plt.subplots(figsize=(10, 8))
+                sns.heatmap(correlation_data, annot=True, fmt=".2f", cmap="coolwarm", ax=ax)
+                st.pyplot(fig)
+            else:
+                st.warning("Por favor, selecciona al menos una variable para visualizar el mapa de calor.")
 
         # Subpestaña Gráfico 2
         with syntax_tab[1]:
