@@ -1,5 +1,5 @@
 # Imagen base de Python
-FROM python:3.9-slim
+FROM python:3.9
 
 # Instalar dependencias del sistema para PostgreSQL
 RUN apt-get update && apt-get install -y libpq-dev && rm -rf /var/lib/apt/lists/*
