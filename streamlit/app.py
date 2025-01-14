@@ -31,7 +31,7 @@ try:
 
         syntax_tab = st.tabs(["Gráfico 1", "Gráfico 2", "Gráfico 3", "Gráfico 4"])
 
-                # Subpestaña Gráfico 1
+        # Subpestaña Gráfico 1
         with syntax_tab[0]:
             st.subheader("Mapa de Calor Interactivo de Correlaciones")
             st.write("Selecciona las variables para generar un mapa de calor dinámico que muestra las correlaciones con la variable objetivo (status).")
@@ -104,8 +104,78 @@ try:
 
         # Subpestaña Gráfico 1
         with external_tab[0]:
-            st.subheader("Gráfico 1")
-            st.write("Aquí irá el primer gráfico de consultas externas")
+            def google_index_visualization(data):
+                st.subheader("Visualización de Google Index con Status")
+                st.write("""
+        
+                **Función:** Intenta comprobar si un dominio o URL está indexado por Google.
+
+                **Valores:**
+                - **-1:** Tráfico inusual detectado (bloqueado por Google).
+                - **0:** URL indexada por Google.
+                - **1:** URL no indexada por Google.
+                """)
+
+                # Seleccionar las variables necesarias
+                etiquetas_gi = data["google_index"].value_counts().index
+                recuento_gi = data["google_index"].value_counts()
+
+                figura, axis = plt.subplots(1, 2, figsize=(15, 7))
+                figura.suptitle("Proporción de Status por Google Index", fontsize=16)
+
+                # Gráfico 1: Proporción de status para cada valor de google index
+                colores_genero = ['#f0f508', '#1498b7', '#ffcc00']
+                axis[0].pie(recuento_gi, labels=etiquetas_gi, autopct="%.2f%%", startangle=90, colors=colores_genero, wedgeprops={'edgecolor': 'black'})
+                axis[0].set_title("Proporción de Google Index de las URLs")
+
+                # Gráfico 2: Diagrama de barras del recuento de las urls por google index según status
+                grafico_google_index_status = sns.countplot(data=data, x="google_index", hue="status", ax=axis[1], palette='pastel')
+
+                # Añadir los números en las barras
+                for p in grafico_google_index_status.patches:
+                    grafico_google_index_status.annotate(f'{p.get_height()}', (p.get_x() + p.get_width() / 2., p.get_height()), 
+                                                ha='center', va='center', fontsize=12, color='black', xytext=(0, 5), textcoords='offset points')
+
+                axis[1].set(title="Google Index de las URLs y Status", ylabel="Cantidad de URLs", xlabel="Google Index")
+
+                figura.tight_layout(rect=[0, 0.03, 1, 0.95])
+                st.pyplot(figura)
+
+                # Análisis de status por Google Index
+                figura, axis = plt.subplots(1, 3, figsize=(15, 6))
+                figura.suptitle("Proporción de Status por Google Index", fontsize=16)
+
+                # Gráfico 1: Proporción de status para URLs indexadas por Google (0)
+                url_indexed_google = data[data["google_index"] == 0]
+                recuento_indexed = url_indexed_google["status"].value_counts()
+                etiquetas_indexed = ["Legítima", "Phishing"]
+                axis[0].pie(recuento_indexed, labels=etiquetas_indexed, autopct="%.2f%%", startangle=90, colors=['#38eb29', '#ff3131'], wedgeprops={'edgecolor': 'black'})
+                axis[0].set_title("URL indexada por Google (0)")
+
+                # Gráfico 2: Proporción de status para URLs no indexadas por Google (1)
+                url_non_indexed_google = data[data["google_index"] == 1]
+                recuento_non_indexed = url_non_indexed_google["status"].value_counts()
+                etiquetas_non_indexed = ["Phishing", "Legítima"]
+                axis[1].pie(recuento_non_indexed, labels=etiquetas_non_indexed, autopct="%.2f%%", startangle=90, colors=['#ff3131', '#38eb29'], wedgeprops={'edgecolor': 'black'})
+                axis[1].set_title("URL no indexada por Google (1)")  
+
+                # Cálculo de la tasa de status (phishing o no) por google index
+                tasa_phishing_indexed = (url_indexed_google["status"].sum() / len(url_indexed_google)) * 100 if len(url_indexed_google) > 0 else 0
+                tasa_phishing_non_indexed = (url_non_indexed_google["status"].sum() / len(url_non_indexed_google)) * 100 if len(url_non_indexed_google) > 0 else 0
+
+                # Gráfico 3: Tasa de status por Google Index
+                axis[2].bar(['URL indexada por Google', 'URL no indexada por Google'], [tasa_phishing_indexed, tasa_phishing_non_indexed], color=['#1498b7', '#f0f508'])
+                axis[2].set_ylabel('Tasa de Status (Phishing o Legítima) (%)')
+                axis[2].set_title('Tasa de Status (Phishing o Legítima) por Google Index')
+
+                for i, v in enumerate([tasa_phishing_indexed, tasa_phishing_non_indexed]):
+                    axis[2].text(i, v + 0.5, f'{v:.2f}%', ha='center', va='bottom', fontsize=12)
+
+                figura.tight_layout(rect=[0, 0.03, 1, 0.95])
+                st.pyplot(figura)
+
+            # Llamar a la función dentro del tablero de Streamlit
+            google_index_visualization(data)
 
         # Subpestaña Gráfico 2
         with external_tab[1]:
