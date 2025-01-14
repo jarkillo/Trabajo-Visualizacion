@@ -4,6 +4,8 @@ import pandas as pd
 import streamlit as st
 import seaborn as sns
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import plotly.express as px
 
 # Leer la URL de la base de datos desde las variables de entorno
 db_url = os.getenv("DATABASE_URL")
@@ -31,7 +33,7 @@ try:
 
         syntax_tab = st.tabs(["Gráfico 1", "Gráfico 2", "Gráfico 3", "Gráfico 4"])
 
-                # Subpestaña Gráfico 1
+        # Subpestaña Gráfico 1
         with syntax_tab[0]:
             st.subheader("Mapa de Calor Interactivo de Correlaciones")
             st.write("Selecciona las variables para generar un mapa de calor dinámico que muestra las correlaciones con la variable objetivo (status).")
@@ -104,8 +106,63 @@ try:
 
         # Subpestaña Gráfico 1
         with external_tab[0]:
-            st.subheader("Gráfico 1")
-            st.write("Aquí irá el primer gráfico de consultas externas")
+            def google_index_visualization(data):
+                st.subheader("Visualización de Google Index con Status")
+                st.write("""
+        
+                **Función:** Intenta comprobar si un dominio o URL está indexado por Google.
+
+                **Valores:**
+                - **-1:** Tráfico inusual detectado (bloqueado por Google).
+                - **0:** URL indexada por Google.
+                - **1:** URL no indexada por Google.
+                """)
+
+
+                # --- Gráficos principales ---
+                fig_pie = px.pie(data, names="google_index", title="Proporción de Google Index de las URLs",
+                                color="google_index", color_discrete_map={-1: '#f0f508', 0: '#1498b7', 1: '#ffcc00'})
+                st.plotly_chart(fig_pie)
+    
+                fig_bar = px.histogram(data, x="google_index", color="status", barmode="group",
+                                        title="Google Index de las URLs y Status",
+                                        labels={"google_index": "Google Index", "status": "Status", "count":"Cantidad de URLs"},
+                                        color_discrete_map={0: '#38eb29', 1: '#ff3131'}) # Mapa de colores para status
+                st.plotly_chart(fig_bar)
+    
+                # --- Análisis de status por Google Index ---
+                fig = go.Figure()
+    
+                for index_value in data['google_index'].unique():
+                    subset = data[data['google_index'] == index_value]
+                    status_counts = subset['status'].value_counts(normalize=True) * 100
+                    
+                    for status_value, percentage in status_counts.items():
+                        fig.add_trace(go.Bar(
+                            x=[f'Google Index: {index_value}'],
+                            y=[percentage],
+                            name=f'Status: {status_value}',
+                            marker_color = '#38eb29' if status_value == 0 else '#ff3131',
+                            customdata=[[index_value, status_value]],
+                            hovertemplate=
+                                "<b>Google Index:</b> %{customdata[0]}<br>" +
+                                "<b>Status:</b> %{customdata[1]}<br>" +
+                                "<b>Porcentaje:</b> %{y:.2f}%<extra></extra>"
+                        ))
+    
+                fig.update_layout(
+                    title="Porcentaje de Status por cada valor de Google Index",
+                    xaxis_title="Google Index",
+                    yaxis_title="Porcentaje",
+                    barmode='group',
+                    legend_title="Status"
+                )
+    
+                st.plotly_chart(fig)
+
+
+            # Llamar a la función dentro del tablero de Streamlit
+            google_index_visualization(data)
 
         # Subpestaña Gráfico 2
         with external_tab[1]:
