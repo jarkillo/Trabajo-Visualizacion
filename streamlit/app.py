@@ -4,6 +4,8 @@ import pandas as pd
 import streamlit as st
 import seaborn as sns
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import plotly.express as px
 
 # Leer la URL de la base de datos desde las variables de entorno
 db_url = os.getenv("DATABASE_URL")
@@ -116,63 +118,48 @@ try:
                 - **1:** URL no indexada por Google.
                 """)
 
-                # Seleccionar las variables necesarias
-                etiquetas_gi = data["google_index"].value_counts().index
-                recuento_gi = data["google_index"].value_counts()
 
-                figura, axis = plt.subplots(1, 2, figsize=(15, 7))
-                figura.suptitle("Proporción de Status por Google Index", fontsize=16)
+                # --- Gráficos principales ---
+                fig_pie = px.pie(data, names="google_index", title="Proporción de Google Index de las URLs",
+                                color="google_index", color_discrete_map={-1: '#f0f508', 0: '#1498b7', 1: '#ffcc00'})
+                st.plotly_chart(fig_pie)
+    
+                fig_bar = px.histogram(data, x="google_index", color="status", barmode="group",
+                                        title="Google Index de las URLs y Status",
+                                        labels={"google_index": "Google Index", "status": "Status", "count":"Cantidad de URLs"},
+                                        color_discrete_map={0: '#38eb29', 1: '#ff3131'}) # Mapa de colores para status
+                st.plotly_chart(fig_bar)
+    
+                # --- Análisis de status por Google Index ---
+                fig = go.Figure()
+    
+                for index_value in data['google_index'].unique():
+                    subset = data[data['google_index'] == index_value]
+                    status_counts = subset['status'].value_counts(normalize=True) * 100
+                    
+                    for status_value, percentage in status_counts.items():
+                        fig.add_trace(go.Bar(
+                            x=[f'Google Index: {index_value}'],
+                            y=[percentage],
+                            name=f'Status: {status_value}',
+                            marker_color = '#38eb29' if status_value == 0 else '#ff3131',
+                            customdata=[[index_value, status_value]],
+                            hovertemplate=
+                                "<b>Google Index:</b> %{customdata[0]}<br>" +
+                                "<b>Status:</b> %{customdata[1]}<br>" +
+                                "<b>Porcentaje:</b> %{y:.2f}%<extra></extra>"
+                        ))
+    
+                fig.update_layout(
+                    title="Porcentaje de Status por cada valor de Google Index",
+                    xaxis_title="Google Index",
+                    yaxis_title="Porcentaje",
+                    barmode='group',
+                    legend_title="Status"
+                )
+    
+                st.plotly_chart(fig)
 
-                # Gráfico 1: Proporción de status para cada valor de google index
-                colores_genero = ['#f0f508', '#1498b7', '#ffcc00']
-                axis[0].pie(recuento_gi, labels=etiquetas_gi, autopct="%.2f%%", startangle=90, colors=colores_genero, wedgeprops={'edgecolor': 'black'})
-                axis[0].set_title("Proporción de Google Index de las URLs")
-
-                # Gráfico 2: Diagrama de barras del recuento de las urls por google index según status
-                grafico_google_index_status = sns.countplot(data=data, x="google_index", hue="status", ax=axis[1], palette='pastel')
-
-                # Añadir los números en las barras
-                for p in grafico_google_index_status.patches:
-                    grafico_google_index_status.annotate(f'{p.get_height()}', (p.get_x() + p.get_width() / 2., p.get_height()), 
-                                                ha='center', va='center', fontsize=12, color='black', xytext=(0, 5), textcoords='offset points')
-
-                axis[1].set(title="Google Index de las URLs y Status", ylabel="Cantidad de URLs", xlabel="Google Index")
-
-                figura.tight_layout(rect=[0, 0.03, 1, 0.95])
-                st.pyplot(figura)
-
-                # Análisis de status por Google Index
-                figura, axis = plt.subplots(1, 3, figsize=(15, 6))
-                figura.suptitle("Proporción de Status por Google Index", fontsize=16)
-
-                # Gráfico 1: Proporción de status para URLs indexadas por Google (0)
-                url_indexed_google = data[data["google_index"] == 0]
-                recuento_indexed = url_indexed_google["status"].value_counts()
-                etiquetas_indexed = ["Legítima", "Phishing"]
-                axis[0].pie(recuento_indexed, labels=etiquetas_indexed, autopct="%.2f%%", startangle=90, colors=['#38eb29', '#ff3131'], wedgeprops={'edgecolor': 'black'})
-                axis[0].set_title("URL indexada por Google (0)")
-
-                # Gráfico 2: Proporción de status para URLs no indexadas por Google (1)
-                url_non_indexed_google = data[data["google_index"] == 1]
-                recuento_non_indexed = url_non_indexed_google["status"].value_counts()
-                etiquetas_non_indexed = ["Phishing", "Legítima"]
-                axis[1].pie(recuento_non_indexed, labels=etiquetas_non_indexed, autopct="%.2f%%", startangle=90, colors=['#ff3131', '#38eb29'], wedgeprops={'edgecolor': 'black'})
-                axis[1].set_title("URL no indexada por Google (1)")  
-
-                # Cálculo de la tasa de status (phishing o no) por google index
-                tasa_phishing_indexed = (url_indexed_google["status"].sum() / len(url_indexed_google)) * 100 if len(url_indexed_google) > 0 else 0
-                tasa_phishing_non_indexed = (url_non_indexed_google["status"].sum() / len(url_non_indexed_google)) * 100 if len(url_non_indexed_google) > 0 else 0
-
-                # Gráfico 3: Tasa de status por Google Index
-                axis[2].bar(['URL indexada por Google', 'URL no indexada por Google'], [tasa_phishing_indexed, tasa_phishing_non_indexed], color=['#1498b7', '#f0f508'])
-                axis[2].set_ylabel('Tasa de Status (Phishing o Legítima) (%)')
-                axis[2].set_title('Tasa de Status (Phishing o Legítima) por Google Index')
-
-                for i, v in enumerate([tasa_phishing_indexed, tasa_phishing_non_indexed]):
-                    axis[2].text(i, v + 0.5, f'{v:.2f}%', ha='center', va='bottom', fontsize=12)
-
-                figura.tight_layout(rect=[0, 0.03, 1, 0.95])
-                st.pyplot(figura)
 
             # Llamar a la función dentro del tablero de Streamlit
             google_index_visualization(data)
