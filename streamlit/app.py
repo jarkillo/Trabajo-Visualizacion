@@ -49,7 +49,7 @@ try:
                 'longest_word_host', 'shortest_words_raw', 'length_hostname',
                 'shortest_word_path', 'phish_hints', 'char_repeat'
             ]
-            selected_vars = st.multiselect("Selecciona variables:", variables, default=variables)
+            selected_vars = st.multiselect("Selecciona variables:", variables, default=variables, key="heatmap")
 
             if selected_vars:
                 # Añadir la variable objetivo
@@ -88,7 +88,7 @@ try:
                 'suspecious_tld', 'statistical_report'
             ]
 
-            selected_variable = st.selectbox("Selecciona una variable:", sintax_url_columns)
+            selected_variable = st.selectbox("Selecciona una variable:", sintax_url_columns, key="dynamic_analysis_var")
 
             if selected_variable:
                 # Gráfico de barras inicial
@@ -150,7 +150,7 @@ try:
                 'brand_in_path': 1.0, 'suspecious_tld': 1.0, 'statistical_report': 1.0
             }
 
-            selected_variables = st.multiselect("Selecciona las variables:", default_thresholds.keys(), default=list(default_thresholds.keys()))
+            selected_variables = st.multiselect("Selecciona las variables:", default_thresholds.keys(), default=list(default_thresholds.keys()), key="phishing_score_vars")
             thresholds = {var: st.number_input(f"Threshold para {var}", min_value=0.0, value=float(default_thresholds[var])) for var in selected_variables}
 
             if selected_variables:
@@ -186,7 +186,7 @@ try:
     with main_tab[1]:
         st.header("Exploración de Contenido")
 
-        content_tab = st.tabs(["Análisis inicial", "Análisis de Distribución y Comparación", "Análisis de Relación Bivariada"])
+        content_tab = st.tabs(["Análisis Inicial", "Análisis de Distribución y Comparación", "Análisis de Relación Bivariada"])
 
         # Subpestaña Gráfico 1
         with content_tab[0]:
@@ -240,13 +240,15 @@ try:
             status_filter = st.multiselect(
                 "Selecciona los estados (status) para filtrar:",
                 data['status'].unique(),
-                default=data['status'].unique()
+                default=data['status'].unique(),
+                key="status_filter_distribution"
             )
 
             # Selección de variables para la distribución
             selected_vars_distribution = st.multiselect(
                 "Selecciona variables para analizar la distribución:",
-                ['domain_in_title', 'ratio_digits_host', 'nb_hyperlinks', 'safe_anchor']
+                ['domain_in_title', 'ratio_digits_host', 'nb_hyperlinks', 'safe_anchor'],
+                key="distribution_vars"
             )
 
             # Parámetros del histograma
@@ -289,7 +291,8 @@ try:
             status_filter = st.multiselect(
                 "Selecciona los estados (status) para filtrar:",
                 data['status'].unique(),
-                default=data['status'].unique()
+                default=data['status'].unique(),
+                key="status_filter_bivariate"
             )
 
             # Selección de variables para el análisis bivariado
@@ -334,10 +337,56 @@ try:
     with main_tab[2]:
         st.header("Exploración de Consultas Externas")
 
-        external_tab = st.tabs(["Google Index", "Page Rank", "Web Traffic", "Domain Age", "Ip", "Domain Registration Length"])
+        external_tab = st.tabs(["Análisis Inicial", "Google Index", "Page Rank", "Web Traffic", "Domain Age", "Ip", "Domain Registration Length"])
 
         # Subpestaña Gráfico 1
         with external_tab[0]:
+            st.subheader("Análisis inicial")
+            st.write("Resumen Estadístico y Mapa de Calor de Correlaciones")
+
+            # Resumen Estadístico Interactivo
+            with st.expander("Resumen Estadístico Interactivo"):
+                st.subheader("Resumen Estadístico de Variables Seleccionadas")
+                # Selección de variables
+                selected_vars_summary = st.multiselect(
+                    "Selecciona variables para el resumen estadístico:",
+                    ['google_index', 'page_rank', 'web_traffic', 'domain_age', 'domain_registration_length', 'ip'],
+                    key="external_summary_vars"
+                )
+                
+                if selected_vars_summary:
+                    summary = data[selected_vars_summary + ['status']].groupby('status').describe().transpose()
+                    st.write(summary)
+                else:
+                    st.warning("Por favor, selecciona al menos una variable para ver el resumen estadístico.")
+
+            # Mapa de Calor de Correlaciones
+            with st.expander("Mapa de Calor de Correlaciones Interactivo"):
+                st.subheader("Mapa de Calor de Correlaciones entre Variables Seleccionadas")
+                
+                # Selección de variables para el mapa de calor
+                selected_vars_heatmap = st.multiselect(
+                    "Selecciona variables para el mapa de calor:",
+                    ['google_index', 'page_rank', 'web_traffic', 'domain_age', 'domain_registration_length', 'ip','status'],
+                    default=['google_index', 'page_rank', 'web_traffic', 'domain_age', 'domain_registration_length', 'ip','status'],
+                    key="external_heatmap_vars"
+                )
+                
+                if len(selected_vars_heatmap) > 1:
+                    # Calcular correlación
+                    corr_matrix = data[selected_vars_heatmap].corr()
+                    
+                    # Generar mapa de calor
+                    heatmap_fig, ax = plt.subplots(figsize=(10, 8))
+                    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", ax=ax)
+                    ax.set_title("Mapa de Calor de Correlaciones")
+                    st.pyplot(heatmap_fig)
+                else:
+                    st.warning("Por favor, selecciona al menos dos variables para generar el mapa de calor.")
+        
+        # Subpestaña Gráfico 2
+        with external_tab[1]:
+            
             def google_index_visualization(data):
                 st.subheader("Visualización de Google Index con Status")
                 st.write("""
@@ -391,8 +440,8 @@ try:
             # Llamar a la función dentro del tablero de Streamlit
             google_index_visualization(data)
 
-        # Subpestaña Gráfico 2
-        with external_tab[1]:
+        # Subpestaña Gráfico 3
+        with external_tab[2]:
             
             def page_rank_visualization(data):
                 st.subheader("Visualización de Page Rank con Status")
@@ -463,30 +512,11 @@ try:
                 )
                 st.plotly_chart(fig)
 
-                # --- Tasa de Status (Phishing o no) por Page Rank ---
-                tasa_phishing_low = (low_page_rank["status"].sum() / len(low_page_rank)) * 100 if len(low_page_rank) > 0 else 0
-                tasa_phishing_high = (high_page_rank["status"].sum() / len(high_page_rank)) * 100 if len(high_page_rank) > 0 else 0
-
-                fig_tasa = go.Figure(go.Bar(
-                    x=['Page Rank Bajo (0-2)', 'Page Rank Alto (3+)'],
-                    y=[tasa_phishing_low, tasa_phishing_high],
-                    marker_color=['#f0f508', '#1498b7']
-                ))
-
-                fig_tasa.update_layout(
-                    title="Tasa de Status (Phishing o Legítima) por Page Rank",
-                    xaxis_title="Page Rank",
-                    yaxis_title="Tasa (%)",
-                    template="plotly_white"
-                )
-
-                st.plotly_chart(fig_tasa)
-
             # Llamar a la función con los datos cargados en el tablero
             page_rank_visualization(data)
 
-        # Subpestaña Gráfico 3
-        with external_tab[2]:
+        # Subpestaña Gráfico 4
+        with external_tab[3]:
 
             def categorize_web_traffic(value, threshold):
                 if value == 0:
@@ -527,51 +557,12 @@ try:
                                         color_discrete_map={0: '#38eb29', 1: '#ff3131'}) # Mapa de colores para status
                 st.plotly_chart(fig_bar)
 
-                # --- Análisis de status por Web Traffic ---
-                fig = go.Figure()
-
-                # Colores para cada status
-                status_colors = {0: '#38eb29', 1: '#ff3131'}
-
-                # Variable para rastrear si se debe mostrar la leyenda para un valor de status
-                legend_shown = {0: False, 1: False}
-
-                for traffic_value in data['web_traffic_category'].unique():
-                    subset = data[data['web_traffic_category'] == traffic_value]
-                    status_counts = subset['status'].value_counts(normalize=True) * 100
-
-                    for status_value, percentage in status_counts.items():
-                        fig.add_trace(go.Bar(
-                            x=[f'Web Traffic: {traffic_value}'],
-                            y=[percentage],
-                            name=f'Status: {status_value}',
-                            marker_color=status_colors[status_value],
-                            customdata=[[traffic_value, status_value]],
-                            hovertemplate=(
-                                "<b>Web Traffic:</b> %{customdata[0]}<br>"
-                                "<b>Status:</b> %{customdata[1]}<br>"
-                                "<b>Porcentaje:</b> %{y:.2f}%<extra></extra>"
-                            ),
-                            # Configuración de la leyenda
-                            showlegend=(not legend_shown[status_value])  # Mostrar la leyenda solo una vez por categoría
-                        ))
-                        legend_shown[status_value] = True  # Marcar la leyenda como mostrada para este status
-
-                fig.update_layout(
-                    title="Porcentaje de Status por cada valor de Web Traffic",
-                    xaxis_title="Web Traffic",
-                    yaxis_title="Porcentaje",
-                    barmode='group',
-                    legend_title="Status"
-                )
-
-                st.plotly_chart(fig) 
 
             # Llamar a la función dentro del tablero de Streamlit
             web_traffic_visualization(data)
 
-        # Subpestaña Gráfico 4
-        with external_tab[3]:
+        # Subpestaña Gráfico 5
+        with external_tab[4]:
             # Función para visualización interactiva de Domain Age y Status
             def categorize_domain_age(value, threshold):
                 if value == -2:
@@ -642,33 +633,11 @@ try:
                 )
                 st.plotly_chart(fig)
 
-                # --- Tasa de Status (Phishing o no) por Domain Age ---
-                tasa_phishing_error_2 = (data[data['domain_age_category'] == 'Error (-2)']['status'].sum() / len(data[data['domain_age_category'] == 'Error (-2)'])) * 100 if len(data[data['domain_age_category'] == 'Error (-2)']) > 0 else 0
-                tasa_phishing_error_1 = (data[data['domain_age_category'] == 'Error (-1)']['status'].sum() / len(data[data['domain_age_category'] == 'Error (-1)'])) * 100 if len(data[data['domain_age_category'] == 'Error (-1)']) > 0 else 0
-                tasa_phishing_bajo = (data[data['domain_age_category'] == 'Rango bajo']['status'].sum() / len(data[data['domain_age_category'] == 'Rango bajo'])) * 100 if len(data[data['domain_age_category'] == 'Rango bajo']) > 0 else 0
-                tasa_phishing_alto = (data[data['domain_age_category'] == 'Rango alto']['status'].sum() / len(data[data['domain_age_category'] == 'Rango alto'])) * 100 if len(data[data['domain_age_category'] == 'Rango alto']) > 0 else 0
-
-                fig_tasa = go.Figure(go.Bar(
-                    x=['Error (-2)', 'Error (-1)', 'Domain Age Bajo', 'Domain Age Alto'],
-                    y=[tasa_phishing_error_2, tasa_phishing_error_1, tasa_phishing_bajo, tasa_phishing_alto],
-                    marker_color=['#d3d3d3', '#d3d3d3', '#1498b7', '#ff5733']
-                ))
-
-                fig_tasa.update_layout(
-                    title="Tasa de Status (Phishing o Legítima) por Domain Age",
-                    xaxis_title="Domain Age",
-                    yaxis_title="Tasa (%)",
-                    template="plotly_white"
-                )
-
-                st.plotly_chart(fig_tasa)
-
             # Llamar a la función con los datos cargados en el tablero
             domain_age_visualization(data)
 
-
-        # Subpestaña Gráfico 5
-        with external_tab[4]:
+        # Subpestaña Gráfico 6
+        with external_tab[5]:
 
             # Función para visualización interactiva de IP y Status
             def ip_visualization(data):
@@ -728,30 +697,11 @@ try:
                 )
                 st.plotly_chart(fig)
 
-                # --- Tasa de Status por IP ---
-                tasa_phishing_ip_0 = (ip_0["status"].sum() / len(ip_0)) * 100 if len(ip_0) > 0 else 0
-                tasa_phishing_ip_1 = (ip_1["status"].sum() / len(ip_1)) * 100 if len(ip_1) > 0 else 0
-
-                fig_tasa = go.Figure(go.Bar(
-                    x=['IP = 0', 'IP = 1'],
-                    y=[tasa_phishing_ip_0, tasa_phishing_ip_1],
-                    marker_color=['#1498b7', '#f0f508']
-                ))
-
-                fig_tasa.update_layout(
-                    title="Tasa de Status (Phishing o Legítima) por IP",
-                    xaxis_title="IP",
-                    yaxis_title="Tasa (%)",
-                    template="plotly_white"
-                )
-
-                st.plotly_chart(fig_tasa)
-
             # Llamar a la función con los datos cargados en el tablero
             ip_visualization(data)
 
-        # Subpestaña Gráfico 6
-        with external_tab[5]:
+        # Subpestaña Gráfico 7
+        with external_tab[6]:
             # Función para visualización interactiva de Domain Registration Length y Status
             def domain_registration_length_visualization(data):
                 st.subheader("Visualización Interactiva de Domain Registration Length y Status")
@@ -812,28 +762,9 @@ try:
                 )
                 st.plotly_chart(fig)
 
-                # --- Tasa de Status por Domain Registration Length ---
-                tasa_phishing_short = (short_length["status"].sum() / len(short_length)) * 100 if len(short_length) > 0 else 0
-                tasa_phishing_long = (long_length["status"].sum() / len(long_length)) * 100 if len(long_length) > 0 else 0
-
-                fig_tasa = go.Figure(go.Bar(
-                    x=['Tiempo Corto', 'Tiempo Largo'],
-                    y=[tasa_phishing_short, tasa_phishing_long],
-                    marker_color=['#f0f508', '#1498b7']
-                ))
-
-                fig_tasa.update_layout(
-                    title="Tasa de Status (Phishing o Legítima) por Domain Registration Length",
-                    xaxis_title="Tiempo de Registro",
-                    yaxis_title="Tasa (%)",
-                    template="plotly_white"
-                )
-
-                st.plotly_chart(fig_tasa)
 
             # Llamar a la función con los datos cargados en el tablero
             domain_registration_length_visualization(data)
-
 
 
 except Exception as e:
