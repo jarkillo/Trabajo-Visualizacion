@@ -187,22 +187,149 @@ try:
     with main_tab[1]:
         st.header("Exploración de Contenido")
 
-        content_tab = st.tabs(["Gráfico 1", "Gráfico 2", "Gráfico 3"])
+        content_tab = st.tabs(["Análisis inicial", "Análisis de Distribución y Comparación", "Análisis de Relación Bivariada"])
 
         # Subpestaña Gráfico 1
         with content_tab[0]:
-            st.subheader("Gráfico 1")
-            st.write("Aquí irá el primer gráfico de contenido")
+            st.subheader("Análisis inicial")
+            st.write("Resumen Estadístico y Mapa de Calor de Correlaciones")
+
+            # Resumen Estadístico Interactivo
+            with st.expander("Resumen Estadístico Interactivo"):
+                st.subheader("Resumen Estadístico de Variables Seleccionadas")
+                # Selección de variables
+                selected_vars_summary = st.multiselect(
+                    "Selecciona variables para el resumen estadístico:",
+                    ['domain_in_title', 'ratio_digits_host', 'nb_hyperlinks', 'safe_anchor']
+                )
+                
+                if selected_vars_summary:
+                    summary = data[selected_vars_summary + ['status']].groupby('status').describe().transpose()
+                    st.write(summary)
+                else:
+                    st.warning("Por favor, selecciona al menos una variable para ver el resumen estadístico.")
+
+            # Mapa de Calor de Correlaciones
+            with st.expander("Mapa de Calor de Correlaciones Interactivo"):
+                st.subheader("Mapa de Calor de Correlaciones entre Variables Seleccionadas")
+                
+                # Selección de variables para el mapa de calor
+                selected_vars_heatmap = st.multiselect(
+                    "Selecciona variables para el mapa de calor:",
+                    ['domain_in_title', 'ratio_digits_host', 'nb_hyperlinks', 'safe_anchor','status'],
+                    default=['domain_in_title', 'ratio_digits_host', 'nb_hyperlinks', 'safe_anchor','status']
+                )
+                
+                if len(selected_vars_heatmap) > 1:
+                    # Calcular correlación
+                    corr_matrix = data[selected_vars_heatmap].corr()
+                    
+                    # Generar mapa de calor
+                    heatmap_fig, ax = plt.subplots(figsize=(10, 8))
+                    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", ax=ax)
+                    ax.set_title("Mapa de Calor de Correlaciones")
+                    st.pyplot(heatmap_fig)
+                else:
+                    st.warning("Por favor, selecciona al menos dos variables para generar el mapa de calor.")
 
         # Subpestaña Gráfico 2
         with content_tab[1]:
-            st.subheader("Gráfico 2")
-            st.write("Aquí irá el segundo gráfico de contenido")
+            st.subheader("Análisis de Distribución y Comparación")
+            st.write("Análisis de Distribución y Comparación de Variables")
+
+            # Filtro por status
+            status_filter = st.multiselect(
+                "Selecciona los estados (status) para filtrar:",
+                data['status'].unique(),
+                default=data['status'].unique()
+            )
+
+            # Selección de variables para la distribución
+            selected_vars_distribution = st.multiselect(
+                "Selecciona variables para analizar la distribución:",
+                ['domain_in_title', 'ratio_digits_host', 'nb_hyperlinks', 'safe_anchor']
+            )
+
+            # Parámetros del histograma
+            plot_type = st.radio(
+                "Selecciona el tipo de gráfico:",
+                ['Histograma', 'Gráfico de Cajas']
+            )
+            
+            if selected_vars_distribution and status_filter:
+                filtered_data = data[data['status'].isin(status_filter)]
+
+                for var in selected_vars_distribution:
+                    st.write(f"Distribución de {var} por Status")
+                    if plot_type == 'Histograma':
+                        # Crear un histograma ajustado
+                        bins = st.slider(f"Selecciona el número de bins para {var}:", min_value=5, max_value=50, value=20)
+                        hist_fig = plt.figure(figsize=(10, 6))
+                        sns.histplot(filtered_data, x=var, hue='status', multiple="stack", bins=bins, kde=True, palette="viridis")
+                        plt.title(f"Distribución de {var} por Status")
+                        plt.xlabel(var)
+                        plt.ylabel("Frecuencia")
+                        st.pyplot(hist_fig)
+                    elif plot_type == 'Gráfico de Cajas':
+                        # Crear un gráfico de cajas
+                        box_fig = plt.figure(figsize=(10, 6))
+                        sns.boxplot(data=filtered_data, x='status', y=var, palette="viridis")
+                        plt.title(f"Distribución de {var} por Status (Gráfico de Cajas)")
+                        plt.xlabel("Status")
+                        plt.ylabel(var)
+                        st.pyplot(box_fig)
+            else:
+                st.warning("Por favor, selecciona al menos una variable y un estado para analizar la distribución.")
 
         # Subpestaña Gráfico 3
         with content_tab[2]:
-            st.subheader("Gráfico 3")
-            st.write("Aquí irá el tercer gráfico de contenido")
+            st.subheader("Análisis de Relación Bivariada")
+            st.write("Aquí podemos explorar relaciones bivariadas entre las variables y status.")
+            
+            # Filtro por status
+            status_filter = st.multiselect(
+                "Selecciona los estados (status) para filtrar:",
+                data['status'].unique(),
+                default=data['status'].unique()
+            )
+
+            # Selección de variables para el análisis bivariado
+            selected_x_var = st.selectbox(
+                "Selecciona una variable para el eje X:",
+                ['domain_in_title', 'ratio_digits_host', 'nb_hyperlinks', 'safe_anchor']
+            )
+
+            selected_y_var = st.selectbox(
+                "Selecciona una variable para el eje Y:",
+                ['domain_in_title', 'ratio_digits_host', 'nb_hyperlinks', 'safe_anchor']
+            )
+
+            plot_type = st.radio(
+                "Selecciona el tipo de gráfico:",
+                ['Gráfico de Dispersión', 'Gráfico de Líneas']
+            )
+
+            # Opción para añadir una línea de regresión
+            add_regression = st.checkbox("Añadir línea de regresión")
+
+            if selected_x_var and selected_y_var and status_filter:
+                filtered_data = data[data['status'].isin(status_filter)]
+                st.write(f"Relación entre {selected_x_var} y {selected_y_var} por Status")
+
+                plot_fig = plt.figure(figsize=(10, 6))
+                if plot_type == 'Gráfico de Dispersión':
+                    sns.scatterplot(data=filtered_data, x=selected_x_var, y=selected_y_var, hue='status', palette="coolwarm", alpha=0.7)
+                    if add_regression:
+                        sns.regplot(data=filtered_data, x=selected_x_var, y=selected_y_var, scatter=False, color='red')
+                elif plot_type == 'Gráfico de Líneas':
+                    sns.lineplot(data=filtered_data, x=selected_x_var, y=selected_y_var, hue='status', palette="coolwarm")
+
+                plt.title(f"Relación entre {selected_x_var} y {selected_y_var} por Status")
+                plt.xlabel(selected_x_var)
+                plt.ylabel(selected_y_var)
+                st.pyplot(plot_fig)
+            else:
+                st.warning("Por favor, selecciona variables y estados para ambos ejes X e Y.")
 
     # Pestaña Consultas externas
     with main_tab[2]:
