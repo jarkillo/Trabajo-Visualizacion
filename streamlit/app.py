@@ -33,32 +33,55 @@ try:
     with main_tab[0]:
         st.header("Exploración de Sintaxis")
 
-        syntax_tab = st.tabs(["Mapa de Calor", "Análisis Dinámico", "Variable phishing_score"])
+        # Todas las variables disponibles
+        variables_sintaxis = [
+            'nb_at', 'nb_dots', 'nb_hyphens', 'nb_qm', 'nb_and', 'nb_or',
+            'nb_eq', 'nb_underscore', 'nb_tilde', 'nb_percent', 'nb_slash',
+            'nb_star', 'nb_colon', 'nb_comma', 'nb_semicolumn', 'nb_dollar',
+            'nb_space', 'nb_www', 'nb_com', 'nb_dslash', 'http_in_path',
+            'https_token', 'ratio_digits_url', 'ratio_digits_host', 'punycode',
+            'port', 'tld_in_path', 'tld_in_subdomain', 'abnormal_subdomain',
+            'nb_subdomains', 'prefix_suffix', 'random_domain', 'shortening_service',
+            'path_extension', 'nb_redirection', 'nb_external_redirection',
+            'length_words_raw', 'char_repeat', 'shortest_words_raw',
+            'shortest_word_host', 'shortest_word_path', 'longest_words_raw',
+            'longest_word_host', 'longest_word_path', 'avg_words_raw',
+            'avg_word_host', 'avg_word_path', 'phish_hints',
+            'domain_in_brand', 'brand_in_subdomain', 'brand_in_path',
+            'suspecious_tld', 'statistical_report', 'length_url', 'length_hostname'
+        ]
 
+        # Crear subpestañas
+        syntax_tab = st.tabs(["Análisis Inicial", "Mapa de Calor", "Análisis Dinámico", "Variable phishing_score"])
+
+        # Subpestaña Gráfico 0: Análisis Inicial
+        with syntax_tab[0]:
+            st.subheader("Análisis inicial")
+            st.write("Resumen Estadístico")
+
+            # Resumen Estadístico Interactivo
+            with st.expander("Resumen Estadístico Interactivo"):
+                st.subheader("Resumen Estadístico de Variables Seleccionadas")
+
+                # Selección de variables
+                selected_vars_summary = st.multiselect(
+                    "Selecciona variables para el resumen estadístico:",
+                    variables_sintaxis
+                )
+
+                if selected_vars_summary:
+                    summary = data[selected_vars_summary + ['status']].groupby('status').describe().transpose()
+                    st.write(summary)
+                else:
+                    st.warning("Por favor, selecciona al menos una variable para ver el resumen estadístico.")
 
        # Subpestaña Gráfico 1
 
-        with syntax_tab[0]:
+        with syntax_tab[1]:
             st.subheader("Mapa de Calor Interactivo de Correlaciones")
             st.write("Selecciona las variables para generar un mapa de calor dinámico que muestra las correlaciones con la variable objetivo (status).")
 
-            # Todas las variables disponibles
-            variables = [
-                'nb_at', 'nb_dots', 'nb_hyphens', 'nb_qm', 'nb_and', 'nb_or',
-                'nb_eq', 'nb_underscore', 'nb_tilde', 'nb_percent', 'nb_slash',
-                'nb_star', 'nb_colon', 'nb_comma', 'nb_semicolumn', 'nb_dollar',
-                'nb_space', 'nb_www', 'nb_com', 'nb_dslash', 'http_in_path',
-                'https_token', 'ratio_digits_url', 'ratio_digits_host', 'punycode',
-                'port', 'tld_in_path', 'tld_in_subdomain', 'abnormal_subdomain',
-                'nb_subdomains', 'prefix_suffix', 'random_domain', 'shortening_service',
-                'path_extension', 'nb_redirection', 'nb_external_redirection',
-                'length_words_raw', 'char_repeat', 'shortest_words_raw',
-                'shortest_word_host', 'shortest_word_path', 'longest_words_raw',
-                'longest_word_host', 'longest_word_path', 'avg_words_raw',
-                'avg_word_host', 'avg_word_path', 'phish_hints',
-                'domain_in_brand', 'brand_in_subdomain', 'brand_in_path',
-                'suspecious_tld', 'statistical_report', 'length_url', 'length_hostname'
-            ]
+
 
             # Variables seleccionadas por defecto
             default_selected = [
@@ -69,7 +92,7 @@ try:
             ]
 
             # Widget de selección múltiple
-            selected_vars = st.multiselect("Selecciona variables:", variables, default=default_selected, key="heatmap")
+            selected_vars = st.multiselect("Selecciona variables:", variables_sintaxis, default=default_selected, key="heatmap")
 
             if selected_vars:
                 # Añadir la variable objetivo
@@ -86,29 +109,11 @@ try:
                 st.warning("Por favor, selecciona al menos una variable para visualizar el mapa de calor.")
 
         # Subpestaña Gráfico 2
-        with syntax_tab[1]:
+        with syntax_tab[2]:
             st.subheader("Análisis Dinámico de Variables")
             st.write("Selecciona una variable para analizar su relación con la variable objetivo (status).")
 
-            # Selección interactiva de la variable
-            sintax_url_columns = [
-                'nb_at', 'nb_dots', 'nb_hyphens', 'nb_qm', 'nb_and', 'nb_or',
-                'nb_eq', 'nb_underscore', 'nb_tilde', 'nb_percent', 'nb_slash',
-                'nb_star', 'nb_colon', 'nb_comma', 'nb_semicolumn', 'nb_dollar',
-                'nb_space', 'nb_www', 'nb_com', 'nb_dslash', 'http_in_path',
-                'https_token', 'ratio_digits_url', 'ratio_digits_host', 'punycode',
-                'port', 'tld_in_path', 'tld_in_subdomain', 'abnormal_subdomain',
-                'nb_subdomains', 'prefix_suffix', 'random_domain', 'shortening_service',
-                'path_extension', 'nb_redirection', 'nb_external_redirection',
-                'length_words_raw', 'char_repeat', 'shortest_words_raw',
-                'shortest_word_host', 'shortest_word_path', 'longest_words_raw',
-                'longest_word_host', 'longest_word_path', 'avg_words_raw',
-                'avg_word_host', 'avg_word_path', 'phish_hints',
-                'domain_in_brand', 'brand_in_subdomain', 'brand_in_path',
-                'suspecious_tld', 'statistical_report'
-            ]
-
-            selected_variable = st.selectbox("Selecciona una variable:", sintax_url_columns, key="dynamic_analysis_var")
+            selected_variable = st.selectbox("Selecciona una variable:", variables_sintaxis, key="dynamic_analysis_var")
 
             if selected_variable:
                 # Gráfico 1: Gráfico de barras inicial (variable seleccionada vs status)
@@ -160,7 +165,7 @@ try:
                 st.warning("Por favor, selecciona una variable para visualizar los gráficos.")
 
         # Subpestaña Gráfico 3
-        with syntax_tab[2]:
+        with syntax_tab[3]:
             st.subheader("Phishing Score y Comparaciones")
             st.write("Generar un puntaje basado en variables seleccionadas y sus umbrales, y analizar su relación con la variable objetivo.")
 
