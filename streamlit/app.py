@@ -24,32 +24,106 @@ def load_data():
 try:
     # Intentar cargar los datos
     data = load_data()
+
     st.title("Dashboard de Phishing")
 
     # Crear las pestañas principales
-    main_tab = st.tabs(["Sintaxis", "Contenido", "Consultas externas"])
+    main_tab = st.tabs(["Portada", "Sintaxis", "Contenido", "Consultas externas", "Resultados de Modelos"])
+
+    # Portada del Dashboard
+    with main_tab[0]:
+        # Título principal
+        st.markdown(
+            """
+            <h1 style='text-align: center; color: #FFD700;'>📊 Dashboard de Predicción de Phishing 📊</h1>
+            """, unsafe_allow_html=True
+        )
+
+        # Subtítulo descriptivo
+        st.markdown(
+            """
+            <h3 style='text-align: center; color: #32CD32;'>Una herramienta para analizar el dataset y comparar modelos predictivos en la detección de phishing</h3>
+            """, unsafe_allow_html=True
+        )
+
+        # Breve descripción
+        st.markdown(
+            """
+            Este dashboard proporciona una visión detallada sobre:
+            - Exploración de variables sintácticas, contenido de URLs y consultas externas.
+            - Análisis de correlaciones y distribuciones de variables.
+            - Generación de puntajes de phishing y comparaciones con la variable objetivo.
+            - Comparación de métricas de validación y test para distintos modelos.
+            - Evaluación de diferencias entre métricas clave.
+            - Exploración interactiva y personalizable de los resultados.
+            
+            Desarrollado por: **[Mercedes Iglesias, Macarena Herrera y Manuel López]** 🧑‍💻
+            """, unsafe_allow_html=True
+        )
 
     # Pestaña Sintaxis
-    with main_tab[0]:
+    with main_tab[1]:
         st.header("Exploración de Sintaxis")
 
-        syntax_tab = st.tabs(["Mapa de Calor", "Análisis Dinámico", "Variable phishing_score"])
+        # Todas las variables disponibles
+        variables_sintaxis = [
+            'nb_at', 'nb_dots', 'nb_hyphens', 'nb_qm', 'nb_and', 'nb_or',
+            'nb_eq', 'nb_underscore', 'nb_tilde', 'nb_percent', 'nb_slash',
+            'nb_star', 'nb_colon', 'nb_comma', 'nb_semicolumn', 'nb_dollar',
+            'nb_space', 'nb_www', 'nb_com', 'nb_dslash', 'http_in_path',
+            'https_token', 'ratio_digits_url', 'ratio_digits_host', 'punycode',
+            'port', 'tld_in_path', 'tld_in_subdomain', 'abnormal_subdomain',
+            'nb_subdomains', 'prefix_suffix', 'random_domain', 'shortening_service',
+            'path_extension', 'nb_redirection', 'nb_external_redirection',
+            'length_words_raw', 'char_repeat', 'shortest_words_raw',
+            'shortest_word_host', 'shortest_word_path', 'longest_words_raw',
+            'longest_word_host', 'longest_word_path', 'avg_words_raw',
+            'avg_word_host', 'avg_word_path', 'phish_hints',
+            'domain_in_brand', 'brand_in_subdomain', 'brand_in_path',
+            'suspecious_tld', 'statistical_report', 'length_url', 'length_hostname'
+        ]
 
+        # Crear subpestañas
+        syntax_tab = st.tabs(["Análisis Inicial", "Mapa de Calor", "Análisis Dinámico", "Variable phishing_score"])
+
+        # Subpestaña Gráfico 0: Análisis Inicial
+        with syntax_tab[0]:
+            st.subheader("Análisis inicial")
+
+            # Resumen Estadístico Interactivo
+
+            st.subheader("Resumen Estadístico de Variables Seleccionadas")
+
+            # Selección de variables
+            selected_vars_summary = st.multiselect(
+                "Selecciona variables para el resumen estadístico:",
+                variables_sintaxis
+            )
+
+            if selected_vars_summary:
+                summary = data[selected_vars_summary + ['status']].groupby('status').describe().transpose()
+                st.write(summary)
+            else:
+                st.warning("Por favor, selecciona al menos una variable para ver el resumen estadístico.")
 
        # Subpestaña Gráfico 1
 
-        with syntax_tab[0]:
+        with syntax_tab[1]:
             st.subheader("Mapa de Calor Interactivo de Correlaciones")
             st.write("Selecciona las variables para generar un mapa de calor dinámico que muestra las correlaciones con la variable objetivo (status).")
 
-            # Selección de variables
-            variables = [
+
+
+            # Variables seleccionadas por defecto
+            default_selected = [
                 'nb_www', 'length_url', 'nb_slash', 'nb_dots', 'nb_hyphens',
                 'nb_qm', 'ratio_digits_url', 'shortest_word_host', 'longest_words_raw',
                 'longest_word_host', 'shortest_words_raw', 'length_hostname',
                 'shortest_word_path', 'phish_hints', 'char_repeat'
             ]
-            selected_vars = st.multiselect("Selecciona variables:", variables, default=variables, key="heatmap")
+
+            # Widget de selección múltiple
+            selected_vars = st.multiselect("Selecciona variables:", variables_sintaxis, default=default_selected, key="heatmap")
 
             if selected_vars:
                 # Añadir la variable objetivo
@@ -66,39 +140,25 @@ try:
                 st.warning("Por favor, selecciona al menos una variable para visualizar el mapa de calor.")
 
         # Subpestaña Gráfico 2
-        with syntax_tab[1]:
+        with syntax_tab[2]:
             st.subheader("Análisis Dinámico de Variables")
             st.write("Selecciona una variable para analizar su relación con la variable objetivo (status).")
 
-            # Selección interactiva de la variable
-            sintax_url_columns = [
-                'nb_at', 'nb_dots', 'nb_hyphens', 'nb_qm', 'nb_and', 'nb_or',
-                'nb_eq', 'nb_underscore', 'nb_tilde', 'nb_percent', 'nb_slash',
-                'nb_star', 'nb_colon', 'nb_comma', 'nb_semicolumn', 'nb_dollar',
-                'nb_space', 'nb_www', 'nb_com', 'nb_dslash', 'http_in_path',
-                'https_token', 'ratio_digits_url', 'ratio_digits_host', 'punycode',
-                'port', 'tld_in_path', 'tld_in_subdomain', 'abnormal_subdomain',
-                'nb_subdomains', 'prefix_suffix', 'random_domain', 'shortening_service',
-                'path_extension', 'nb_redirection', 'nb_external_redirection',
-                'length_words_raw', 'char_repeat', 'shortest_words_raw',
-                'shortest_word_host', 'shortest_word_path', 'longest_words_raw',
-                'longest_word_host', 'longest_word_path', 'avg_words_raw',
-                'avg_word_host', 'avg_word_path', 'phish_hints',
-                'domain_in_brand', 'brand_in_subdomain', 'brand_in_path',
-                'suspecious_tld', 'statistical_report'
-            ]
-
-            selected_variable = st.selectbox("Selecciona una variable:", sintax_url_columns, key="dynamic_analysis_var")
+            selected_variable = st.selectbox("Selecciona una variable:", variables_sintaxis, key="dynamic_analysis_var")
 
             if selected_variable:
-                # Gráfico de barras inicial
-                st.write(f"### Gráfico de Barras: {selected_variable} vs status")
-                fig1, ax1 = plt.subplots(figsize=(10, 6))
-                sns.countplot(x=selected_variable, hue='status', data=data, ax=ax1, palette="viridis")
-                ax1.set_title(f"Distribución de {selected_variable} por Status")
-                ax1.set_xlabel(selected_variable)
-                ax1.set_ylabel("Cantidad de Datos")
-                st.pyplot(fig1)
+                # Gráfico 1: Gráfico de barras inicial (variable seleccionada vs status)
+                fig_bar1 = px.histogram(
+                    data_frame=data,
+                    x=selected_variable,  # La variable seleccionada
+                    color="status",  # Diferenciación por status
+                    barmode="group",
+                    title=f"Distribución de {selected_variable} por Status",
+                    labels={"status": "Status", selected_variable: selected_variable, "count": "Cantidad de URLs"},
+                    color_discrete_map={0: '#38eb29', 1: '#ff3131'}  # Verde y rojo
+                )
+                st.plotly_chart(fig_bar1)
+
 
                 if data[selected_variable].dtype in ['float64', 'int64']:
                     # Elección entre umbral personalizado o intervalos iguales
@@ -120,20 +180,23 @@ try:
                                                     value=float(data[selected_variable].mean()))
                         data[f"{selected_variable}_binarized"] = (data[selected_variable] >= threshold).astype(int)
 
-                    # Gráfico de barras binarizado
-                    st.write(f"### Gráfico de Barras: {selected_variable} binarizado vs status")
-                    fig2, ax2 = plt.subplots(figsize=(10, 6))
-                    sns.countplot(x=f"{selected_variable}_binarized", hue='status', data=data, ax=ax2, palette="viridis")
-                    ax2.set_title(f"{selected_variable} Binarizado por Status")
-                    ax2.set_xlabel(f"{selected_variable} Binarizado")
-                    ax2.set_ylabel("Cantidad de Datos")
-                    st.pyplot(fig2)
+                    # Gráfico 2: Gráfico de barras binarizado (variable seleccionada binarizada vs status)
+                    fig_bar2 = px.histogram(
+                        data_frame=data,
+                        x=f"{selected_variable}_binarized",  # Variable binarizada
+                        color="status",  # Diferenciación por status
+                        barmode="group",
+                        title=f"{selected_variable} Binarizado por Status",
+                        labels={"status": "Status", f"{selected_variable}_binarized": f"{selected_variable} Binarizado", "count": "Cantidad de URLs"},
+                        color_discrete_map={0: '#38eb29', 1: '#ff3131'}  # Verde y rojo
+                    )
+                    st.plotly_chart(fig_bar2)
 
             else:
                 st.warning("Por favor, selecciona una variable para visualizar los gráficos.")
 
         # Subpestaña Gráfico 3
-        with syntax_tab[2]:
+        with syntax_tab[3]:
             st.subheader("Phishing Score y Comparaciones")
             st.write("Generar un puntaje basado en variables seleccionadas y sus umbrales, y analizar su relación con la variable objetivo.")
 
@@ -149,9 +212,10 @@ try:
                 'avg_word_path': 11.0, 'phish_hints': 1.0, 'brand_in_subdomain': 1.0,
                 'brand_in_path': 1.0, 'suspecious_tld': 1.0, 'statistical_report': 1.0
             }
-
-            selected_variables = st.multiselect("Selecciona las variables:", default_thresholds.keys(), default=list(default_thresholds.keys()), key="phishing_score_vars")
-            thresholds = {var: st.number_input(f"Threshold para {var}", min_value=0.0, value=float(default_thresholds[var])) for var in selected_variables}
+            with st.expander("Configuración de Phishing Score"):
+                st.write("Configura las variables y umbrales para el cálculo del phishing_score.")
+                selected_variables = st.multiselect("Selecciona las variables:", default_thresholds.keys(), default=list(default_thresholds.keys()), key="phishing_score_vars")
+                thresholds = {var: st.number_input(f"Threshold para {var}", min_value=0.0, value=float(default_thresholds[var])) for var in selected_variables}
 
             if selected_variables:
                 # Crear phishing_score
@@ -162,28 +226,60 @@ try:
                     else:
                         data['phishing_score'] += (data[var] >= threshold).astype(int)
 
-                # Gráfico 1: Comparación phishing_score con status
-                st.write("### Comparación entre phishing_score y status")
-                fig3, ax3 = plt.subplots(figsize=(10, 6))
-                phishing_counts = data.groupby(['phishing_score', 'status']).size().reset_index(name='counts')
-                sns.barplot(x='phishing_score', y='counts', hue='status', data=phishing_counts, ax=ax3, palette="viridis")
-                ax3.set_title("Distribución de Phishing Score por Status")
-                ax3.set_xlabel("Phishing Score")
-                ax3.set_ylabel("Cantidad de Registros")
-                st.pyplot(fig3)
+                # Asegurar que 'status' sea categórica
+                data['status'] = data['status'].astype('category')
 
-                # Gráfico 2: Mapa de calor de phishing_score con status
+
+                # Gráfico de phishing_score vs status
+                st.write("### Comparación entre phishing_score y status")
+                phishing_counts = data.groupby(['phishing_score', 'status']).size().reset_index(name='counts')
+
+                fig_bar3 = px.bar(
+                    phishing_counts,
+                    x="phishing_score",
+                    y="counts",
+                    color="status",
+                    barmode="relative", # Barras apiladas
+                    title="Distribución de Phishing Score por Status",
+                    labels={"phishing_score": "Phishing Score", "counts": "Cantidad de Registros", "status": "Status"},
+                    category_orders={"status": [0, 1]},  
+                    color_discrete_map={0: '#38eb29', 1: '#ff3131'}  # Verde y rojo
+                )
+
+                st.plotly_chart(fig_bar3)
+
+                # Mapa de calor: Correlación de phishing_score con status usando rojo y azul vivos con valores más visibles
                 st.write("### Mapa de Calor: Phishing Score vs Status")
-                fig4, ax4 = plt.subplots(figsize=(8, 6))
+
+                # Calcular la correlación
                 heatmap_data = data[['phishing_score', 'status']].corr()
-                sns.heatmap(heatmap_data, annot=True, cmap="coolwarm", ax=ax4)
-                st.pyplot(fig4)
+
+                # Crear el mapa de calor con colores vivos
+                fig_heatmap = px.imshow(
+                    heatmap_data,
+                    color_continuous_scale=["#ff6961", "#ffffff", "#61b6ff"],  # Rojo vivo, blanco, azul vivo
+                    title="Mapa de Calor: Phishing Score vs Status",
+                    labels={"color": "Correlación"},
+                    x=heatmap_data.columns, 
+                    y=heatmap_data.columns,
+                    text_auto=".2f"  # Mostrar valores con 2 decimales en las celdas
+                )
+
+                # Cambiar el color de texto para que sea visible sobre el fondo
+                fig_heatmap.update_traces(
+                    textfont=dict(color="white"),  # Color blanco para los valores
+                    zmin=-1,  # Correlación negativa máxima
+                    zmax=1    # Correlación positiva máxima
+                )
+
+                # Mostrar el gráfico
+                st.plotly_chart(fig_heatmap)
             else:
                 st.warning("Por favor, selecciona al menos una variable para generar el phishing_score.")
 
 
     # Pestaña Contenido
-    with main_tab[1]:
+    with main_tab[2]:
         st.header("Exploración de Contenido")
 
         content_tab = st.tabs(["Análisis Inicial", "Análisis de Distribución y Comparación", "Análisis de Relación Bivariada"])
@@ -334,7 +430,7 @@ try:
                 st.warning("Por favor, selecciona variables y estados para ambos ejes X e Y.")
 
     # Pestaña Consultas externas
-    with main_tab[2]:
+    with main_tab[3]:
         st.header("Exploración de Consultas Externas")
 
         external_tab = st.tabs(["Análisis Inicial", "Google Index", "Page Rank", "Web Traffic", "Domain Age", "Ip", "Domain Registration Length"])
@@ -766,6 +862,128 @@ try:
             # Llamar a la función con los datos cargados en el tablero
             domain_registration_length_visualization(data)
 
+    # Pestaña de Resultados de Modelos
+    with main_tab[4]:
+        st.header("Resultados de Modelos")
+        st.write("Visualiza los resultados de la selección de características y evaluación de modelos.")
+
+        # Datos de la tabla
+        import pandas as pd
+
+        # Crea el DataFrame con los datos proporcionados
+        data_modelos = pd.DataFrame({
+            "Método Selección": ["manual", "manual", "importancia", "L1", "importancia", "manual", "L1", "importancia", "L1"],
+            "Modelo": ["XGBoost", "Gradient Boosting", "XGBoost", "XGBoost", "Gradient Boosting", "Random Forest", "Gradient Boosting", "Random Forest", "Random Forest"],
+            "Modo": ["GridSearch"] * 9,
+            "Accuracy Validation": [0.966390, 0.967311, 0.956722, 0.966851, 0.961326, 0.964088, 0.970534, 0.954420, 0.959945],
+            "Accuracy Test": [0.971455, 0.961455, 0.967311, 0.966390, 0.966390, 0.965009, 0.963168, 0.962247, 0.960866],
+            "Accuracy-difference": [0.005065, 0.004144, 0.010589, -0.000461, 0.005064, 0.000921, -0.007366, 0.007827, 0.000921]
+        })
+
+        # Mostrar la tabla interactiva
+        with st.expander("Resumen Estadístico de las Métricas"):
+            st.subheader("Tabla de Resultados de Modelos")
+            st.dataframe(data_modelos, use_container_width=True)
+
+            # Opcional: Descargar la tabla como archivo CSV
+            @st.cache_data
+            def convertir_csv(df):
+                return df.to_csv(index=False).encode('utf-8')
+
+            csv = convertir_csv(data_modelos)
+
+            st.download_button(
+                label="Descargar Tabla en CSV",
+                data=csv,
+                file_name="resultados_modelos.csv",
+                mime="text/csv"
+            )
+
+        # Resumen estadístico
+        with st.expander("Resumen Estadístico de las Métricas"):
+            st.subheader("Resumen Estadístico de las Métricas")
+            st.write(data_modelos[["Accuracy Validation", "Accuracy Test", "Accuracy-difference"]].describe())
+
+            # Gráfico comparativo de métricas por modelo
+            melted_data = data_modelos.melt(
+                id_vars=["Modelo", "Método Selección"],
+                value_vars=["Accuracy Validation", "Accuracy Test"],
+                var_name="Métrica",
+                value_name="Valor"
+            )
+
+        with st.expander("Comparación de Métricas por Modelo"):
+            selected_method = st.selectbox(
+                "Selecciona el Método de Selección:",
+                options=data_modelos["Método Selección"].unique(),
+                index=0
+            )
+
+            filtered_data = melted_data[melted_data["Método Selección"] == selected_method]
+
+            # Definir una paleta de colores vivos
+            colors_vivos = {
+                "F1-Macro Validation": "#FF6347",  # Rojo tomate
+                "Accuracy Validation": "#FFD700",  # Amarillo
+                "F1-Macro Test": "#1E90FF",       # Azul brillante
+                "Accuracy Test": "#32CD32"        # Verde lima
+            }
+
+            fig_line_metrics_improved = px.scatter(
+                filtered_data,
+                x="Modelo",
+                y="Valor",
+                color="Métrica",
+                size="Valor",
+                size_max=15,
+                title=f"Comparación de Métricas por Modelo (Método: {selected_method})",
+                labels={"Valor": "Puntuación", "Métrica": "Métrica", "Modelo": "Modelo"},
+                color_discrete_map=colors_vivos  # Aplicar los colores vivos
+            )
+
+            for metric in filtered_data["Métrica"].unique():
+                metric_data = filtered_data[filtered_data["Métrica"] == metric]
+                fig_line_metrics_improved.add_scatter(
+                    x=metric_data["Modelo"],
+                    y=metric_data["Valor"],
+                    mode="lines",
+                    line=dict(width=2, color=colors_vivos[metric]),  # Usar los mismos colores para las líneas
+                    name=f"Línea: {metric}",
+                    showlegend=False
+                )
+
+            st.plotly_chart(fig_line_metrics_improved)
+
+
+        with st.expander("Diferencia en Accuracy entre Validación y Test"):
+            fig_line_accuracy_diff = px.line(
+                data_modelos,
+                x="Modelo",
+                y="Accuracy-difference",
+                color="Método Selección",
+                markers=True,
+                title="Diferencia en Accuracy entre Validación y Test por Modelo",
+                labels={"Accuracy-difference": "Diferencia en Accuracy", "Modelo": "Modelo"},
+                color_discrete_sequence=["#FF4500", "#00FA9A", "#1E90FF"]  # Colores vivos para cada método
+            )
+
+            fig_line_accuracy_diff.update_traces(
+                marker=dict(size=12),
+                line=dict(width=3)  # Líneas más gruesas para mejor visibilidad
+            )
+
+            st.plotly_chart(fig_line_accuracy_diff)
+
+
+
+        with st.expander("Mejor Modelo según Accuracy Test"):
+    # Seleccionar el mejor modelo según Accuracy Test
+            best_model = data_modelos.loc[data_modelos["Accuracy Test"].idxmax()]
+
+            # Mostrar los detalles del mejor modelo
+            st.write(f"**Modelo:** {best_model['Modelo']}")
+            st.write(f"**Método de Selección:** {best_model['Método Selección']}")
+            st.write(f"**Accuracy Test:** {best_model['Accuracy Test']:.3f}")
 
 except Exception as e:
     st.error(f"Error al cargar los datos: {e}")
