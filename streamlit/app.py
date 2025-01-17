@@ -24,13 +24,45 @@ def load_data():
 try:
     # Intentar cargar los datos
     data = load_data()
+
     st.title("Dashboard de Phishing")
 
     # Crear las pestañas principales
-    main_tab = st.tabs(["Sintaxis", "Contenido", "Consultas externas", "Resultados de Modelos"])
+    main_tab = st.tabs(["Portada", "Sintaxis", "Contenido", "Consultas externas", "Resultados de Modelos"])
+
+    # Portada del Dashboard
+    with main_tab[0]:
+        # Título principal
+        st.markdown(
+            """
+            <h1 style='text-align: center; color: #FFD700;'>📊 Dashboard de Predicción de Phishing 📊</h1>
+            """, unsafe_allow_html=True
+        )
+
+        # Subtítulo descriptivo
+        st.markdown(
+            """
+            <h3 style='text-align: center; color: #32CD32;'>Una herramienta para analizar el dataset y comparar modelos predictivos en la detección de phishing</h3>
+            """, unsafe_allow_html=True
+        )
+
+        # Breve descripción
+        st.markdown(
+            """
+            Este dashboard proporciona una visión detallada sobre:
+            - Exploración de variables sintácticas, contenido de URLs y consultas externas.
+            - Análisis de correlaciones y distribuciones de variables.
+            - Generación de puntajes de phishing y comparaciones con la variable objetivo.
+            - Comparación de métricas de validación y test para distintos modelos.
+            - Evaluación de diferencias entre métricas clave.
+            - Exploración interactiva y personalizable de los resultados.
+            
+            Desarrollado por: **[Mercedes Iglesias, Macarena Herrera y Manuel López]** 🧑‍💻
+            """, unsafe_allow_html=True
+        )
 
     # Pestaña Sintaxis
-    with main_tab[0]:
+    with main_tab[1]:
         st.header("Exploración de Sintaxis")
 
         # Todas las variables disponibles
@@ -247,7 +279,7 @@ try:
 
 
     # Pestaña Contenido
-    with main_tab[1]:
+    with main_tab[2]:
         st.header("Exploración de Contenido")
 
         content_tab = st.tabs(["Análisis Inicial", "Análisis de Distribución y Comparación", "Análisis de Relación Bivariada"])
@@ -398,7 +430,7 @@ try:
                 st.warning("Por favor, selecciona variables y estados para ambos ejes X e Y.")
 
     # Pestaña Consultas externas
-    with main_tab[2]:
+    with main_tab[3]:
         st.header("Exploración de Consultas Externas")
 
         external_tab = st.tabs(["Análisis Inicial", "Google Index", "Page Rank", "Web Traffic", "Domain Age", "Ip", "Domain Registration Length"])
@@ -831,7 +863,7 @@ try:
             domain_registration_length_visualization(data)
 
     # Pestaña de Resultados de Modelos
-    with main_tab[3]:
+    with main_tab[4]:
         st.header("Resultados de Modelos")
         st.write("Visualiza los resultados de la selección de características y evaluación de modelos.")
 
