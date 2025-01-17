@@ -704,7 +704,7 @@ try:
                     x="domain_age_category",
                     color="status",
                     barmode="group",
-                    title="Distribución de Comain Age en función de Status",
+                    title="Distribución de Domain Age en función de Status",
                     labels={"domain_age_category": "Domain Age", "status": "Status", "count": "Cantidad de URLs"},
                     color_discrete_map={0: '#38eb29', 1: '#ff3131'}  # Colores para status
                 )
