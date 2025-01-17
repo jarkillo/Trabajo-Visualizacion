@@ -276,8 +276,7 @@ try:
                 st.plotly_chart(fig_heatmap)
             else:
                 st.warning("Por favor, selecciona al menos una variable para generar el phishing_score.")
-
-
+    
     # Pestaña Contenido
     with main_tab[2]:
         st.header("Exploración de Contenido")
@@ -434,7 +433,7 @@ try:
         st.header("Exploración de Consultas Externas")
 
         external_tab = st.tabs(["Análisis Inicial", "Google Index", "Page Rank", "Web Traffic", "Domain Age", "Ip", "Domain Registration Length"])
-
+    
         # Subpestaña Análisis Inicial
         with external_tab[0]:
             st.subheader("Análisis inicial")
@@ -499,7 +498,6 @@ try:
                 # --- Gráficos principales ---
                 fig_pie = px.pie(data, names="google_index", title="Proporción de Google Index en las URLs",
                                 color="google_index", color_discrete_map={-1: '#f0f508', 0: '#1498b7', 1: '#ffcc00'})
-                fig_pie.for_each_trace(lambda t: t.update(name = {-1: 'Tráfico Inusual', 0: 'Indexada', 1: 'No Indexada'}[t.name]))
                 st.plotly_chart(fig_pie)
 
                 fig_bar = px.histogram(data, x="google_index", color="status", barmode="group",
@@ -755,7 +753,6 @@ try:
                 # --- Gráfico de sectores: Proporción de IP en las URLs ---
                 fig_pie = px.pie(data, names="ip", title="Proporción de IP en las URLs",
                                 color="ip", color_discrete_map={0: '#1498b7', 1: '#ffcc00'})
-                fig_pie.for_each_trace(lambda t: t.update(name = {0: 'No IP', 1: 'IP como dominio'}[t.name]))
                 st.plotly_chart(fig_pie)
 
                 # --- Gráfico de barras agrupadas: IP y Status ---
@@ -992,6 +989,8 @@ try:
             st.write(f"**Modelo:** {best_model['Modelo']}")
             st.write(f"**Método de Selección:** {best_model['Método Selección']}")
             st.write(f"**Accuracy Test:** {best_model['Accuracy Test']:.3f}")
+
 except Exception as e:
     st.error(f"Error al cargar los datos: {e}")
+    st.write("Detalles del error:", e)
 
