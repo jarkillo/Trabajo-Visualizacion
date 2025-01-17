@@ -276,8 +276,7 @@ try:
                 st.plotly_chart(fig_heatmap)
             else:
                 st.warning("Por favor, selecciona al menos una variable para generar el phishing_score.")
-
-
+    
     # Pestaña Contenido
     with main_tab[2]:
         st.header("Exploración de Contenido")
@@ -434,8 +433,8 @@ try:
         st.header("Exploración de Consultas Externas")
 
         external_tab = st.tabs(["Análisis Inicial", "Google Index", "Page Rank", "Web Traffic", "Domain Age", "Ip", "Domain Registration Length"])
-
-        # Subpestaña Gráfico 1
+    
+        # Subpestaña Análisis Inicial
         with external_tab[0]:
             st.subheader("Análisis inicial")
             st.write("Resumen Estadístico y Mapa de Calor de Correlaciones")
@@ -480,11 +479,12 @@ try:
                 else:
                     st.warning("Por favor, selecciona al menos dos variables para generar el mapa de calor.")
         
-        # Subpestaña Gráfico 2
+        # Subpestaña Gráfico 1: google_index
         with external_tab[1]:
             
+            # Función para visualización interactiva de Google Index y Status
             def google_index_visualization(data):
-                st.subheader("Visualización de Google Index con Status")
+                st.subheader("Visualización de Google Index con Status)")
                 st.write("""
                 
                 **Función:** Intenta comprobar si un dominio o URL está indexado por Google.
@@ -496,49 +496,45 @@ try:
                 """)
 
                 # --- Gráficos principales ---
-                fig_pie = px.pie(data, names="google_index", title="Proporción de Google Index de las URLs",
+                fig_pie = px.pie(data, names="google_index", title="Proporción de Google Index en las URLs",
                                 color="google_index", color_discrete_map={-1: '#f0f508', 0: '#1498b7', 1: '#ffcc00'})
                 st.plotly_chart(fig_pie)
 
                 fig_bar = px.histogram(data, x="google_index", color="status", barmode="group",
-                                        title="Google Index de las URLs y Status",
+                                        title="Distribución de Google Index en función de Status",
                                         labels={"google_index": "Google Index", "status": "Status", "count":"Cantidad de URLs"},
                                         color_discrete_map={0: '#38eb29', 1: '#ff3131'}) # Mapa de colores para status
+                fig_bar.for_each_trace(lambda t: t.update(name = {'0': 'Legítima', '1': 'Phishing'}[str(t.name)]))
                 st.plotly_chart(fig_bar)
 
-                # --- Análisis de status por Google Index ---
-                fig = go.Figure()
+                # Selección interactiva de Google Index
+                selected_google_index = st.selectbox("Selecciona el valor de Google Index:", [0, 1], key="google_index_selection")
 
-                # Colores para cada status
-                status_colors = {0: '#38eb29', 1: '#ff3131'}
+                # Filtrar datos según la selección
+                subset = data[data['google_index'] == selected_google_index]
+                status_counts = subset['status'].value_counts(normalize=True) * 100
 
-                # Variable para rastrear si se debe mostrar la leyenda para un valor de status
-                legend_shown = {0: False, 1: False}
+                # Crear gráfico de sectores
+                fig_pie = go.Figure(go.Pie(
+                    labels=["Legítima", "Phishing"],
+                    values=[status_counts.get(0, 0), status_counts.get(1, 0)],
+                    marker=dict(colors=['#38eb29', '#ff3131']),
+                    hole=0.4
+                ))
 
-                # --- Gráficos de sectores para Google Index 0 y 1 ---
-                for index_value in [0, 1]:
-                    subset = data[data['google_index'] == index_value]
-                    status_counts = subset['status'].value_counts(normalize=True) * 100
+                fig_pie.update_layout(
+                    title=f"Proporción de Status para Google Index {selected_google_index}"
+                )
 
-                    fig_pie = go.Figure(go.Pie(
-                        labels=["Legítima", "Phishing"],
-                        values=[status_counts.get(0, 0), status_counts.get(1, 0)],
-                        marker=dict(colors=['#38eb29', '#ff3131']),
-                        hole=0.4
-                    ))
-
-                    fig_pie.update_layout(
-                        title=f"Proporción de Status para Google Index {index_value}"
-                    )
-
-                    st.plotly_chart(fig_pie)
+                st.plotly_chart(fig_pie)
 
             # Llamar a la función dentro del tablero de Streamlit
             google_index_visualization(data)
 
-        # Subpestaña Gráfico 3
+        # Subpestaña Gráfico 2: page_rank
         with external_tab[2]:
             
+            # Función para visualización interactiva de Page Rank y Status
             def page_rank_visualization(data):
                 st.subheader("Visualización de Page Rank con Status")
                 st.write("""
@@ -546,72 +542,65 @@ try:
                 **Función:** Indica la puntuación PageRank de un dominio determinado a partir de la API Open PageRank.
 
                 **Valores:**
-                - 0: No hay puntuación de PageRank (el dominio no está clasificado o no hay puntuación válida).
-                - *Positive Integer*: Puntuación de PageRank (una medida de la importancia o relevancia del dominio).
-                - -1: Se ha producido un error (e.g., dominio no válido o problema de solicitud).
+                - **0**: No hay puntuación de PageRank (el dominio no está clasificado o no hay puntuación válida).
+                - **Positive Integer**: Puntuación de PageRank (una medida de la importancia o relevancia del dominio).
+                - **-1**: Se ha producido un error (e.g., dominio no válido o problema de solicitud).
                 """)
 
-                 # --- Gráfico de sectores: Proporción de Page Rank ---
+                 # --- Gráfico de sectores: Proporción de Page Rank en las URLs---
                 fig_pie = px.pie(
                     data_frame=data,
                     names="page_rank",
-                    title="Proporción de Page Rank de las URLs",
+                    title="Proporción de Page Rank en las URLs",
                     color="page_rank",
                     color_discrete_sequence=px.colors.qualitative.Pastel
                 )
                 st.plotly_chart(fig_pie)
 
-                # --- Gráfico de barras agrupadas: Page Rank y Status ---
+                # --- Gráfico de barras agrupadas: Distribución de Page Rank en función de Status ---
                 fig_bar = px.histogram(
                     data_frame=data,
                     x="page_rank",
                     color="status",
                     barmode="group",
-                    title="Page Rank de las URLs y Status",
+                    title="Distribución de Page Rank en función de Status",
                     labels={"page_rank": "Page Rank", "status": "Status", "count": "Cantidad de URLs"},
                     color_discrete_map={0: '#38eb29', 1: '#ff3131'}  # Colores para status
                 )
+                fig_bar.for_each_trace(lambda t: t.update(name = {'0': 'Legítima', '1': 'Phishing'}[str(t.name)]))
                 st.plotly_chart(fig_bar)
 
-                # --- Análisis de Status por Page Rank ---
-                fig = go.Figure()
+                # Selección interactiva de Page Rank
+                selected_page_rank = st.selectbox("Selecciona el rango de Page Rank:", ["Bajo (0-2)", "Alto (3+)", "Error (-1)"], key="page_rank_selection")
 
-                # Proporción de status para Page Rank Bajo (0-2)
-                low_page_rank = data[data["page_rank"] <= 2]
-                recuento_low = low_page_rank["status"].value_counts()
-                fig.add_trace(go.Pie(
-                    labels=["Phishing", "Legítima"],
-                    values=recuento_low,
-                    name="Page Rank Bajo (0-2)",
-                    marker=dict(colors=['#ff3131', '#38eb29']),
-                    hole=0.4
-                ))
+                # Filtrar datos según la selección
+                if selected_page_rank == "Bajo (0-2)":
+                    subset = data[data["page_rank"] <= 2]
+                elif selected_page_rank == "Alto (3+)":
+                    subset = data[data["page_rank"] > 2]
+                else:
+                    subset = data[data["page_rank"] == -1]
 
-                # Proporción de status para Page Rank Alto (3+)
-                high_page_rank = data[data["page_rank"] > 2]
-                recuento_high = high_page_rank["status"].value_counts()
-                fig.add_trace(go.Pie(
+                status_counts = subset["status"].value_counts(normalize=True) * 100
+
+                # Crear gráfico de sectores
+                fig = go.Figure(go.Pie(
                     labels=["Legítima", "Phishing"],
-                    values=recuento_high,
-                    name="Page Rank Alto (3+)",
+                    values=[status_counts.get(0, 0), status_counts.get(1, 0)],
                     marker=dict(colors=['#38eb29', '#ff3131']),
                     hole=0.4
                 ))
 
-                # Configuración del layout
                 fig.update_layout(
-                    title="Proporción de Status por Page Rank",
-                    annotations=[
-                        dict(text="Bajo (0-2)", x=0.18, y=0.5, font_size=12, showarrow=False),
-                        dict(text="Alto (3+)", x=0.82, y=0.5, font_size=12, showarrow=False)
-                    ]
+                    title=f"Proporción de Status para Page Rank {selected_page_rank}"
                 )
+
                 st.plotly_chart(fig)
 
-            # Llamar a la función con los datos cargados en el tablero
+            # Llamar a la función con los datos cargados en el tablero Streamlit
             page_rank_visualization(data)
 
-        # Subpestaña Gráfico 4
+        # Subpestaña Gráfico 3: web_traffic
         with external_tab[3]:
 
             def categorize_web_traffic(value, threshold):
@@ -626,8 +615,7 @@ try:
             threshold = np.percentile(data['web_traffic'][data['web_traffic'] > 0], 50)
 
             # Crear la columna 'web_traffic_category'
-            data['web_traffic_category'] = data['web_traffic'].apply(categorize_web_traffic, args=(threshold,))
-
+            data['web_traffic_category'] = data['web_traffic'].apply(lambda x: categorize_web_traffic(x, threshold))
 
             # Función para visualización interactiva de Web Traffic y Status
             def web_traffic_visualization(data):
@@ -643,23 +631,44 @@ try:
                 """)
 
                 # --- Gráficos principales ---
-                fig_pie = px.pie(data, names="web_traffic_category", title="Proporción de Web Traffic de las URLs",
+                fig_pie = px.pie(data, names="web_traffic_category", title="Proporción de Web Traffic en las URLs",
                                 color="web_traffic_category", color_discrete_map={'Error': '#d3d3d3', 'Rango bajo': '#1498b7', 'Rango alto': '#ffcc00'})
                 st.plotly_chart(fig_pie)
 
                 fig_bar = px.histogram(data, x="web_traffic_category", color="status", barmode="group",
-                                        title="Web Traffic de las URLs y Status",
+                                        title="Distribución de Web Traffic en función de Status",
                                         labels={"web_traffic_category": "Web Traffic", "status": "Status", "count":"Cantidad de URLs"},
                                         color_discrete_map={0: '#38eb29', 1: '#ff3131'}) # Mapa de colores para status
+                fig_bar.for_each_trace(lambda t: t.update(name = {'0': 'Legítima', '1': 'Phishing'}[str(t.name)]))
                 st.plotly_chart(fig_bar)
 
+                # Selección interactiva de Web Traffic
+                selected_web_traffic = st.selectbox("Selecciona el rango de Web Traffic:", ["Error (0)", "Rango bajo", "Rango alto"], key="web_traffic_selection")
+
+                # Filtrar datos según la selección
+                subset = data[data['web_traffic_category'] == selected_web_traffic]
+                status_counts = subset['status'].value_counts(normalize=True) * 100
+
+                # Crear gráfico de sectores
+                fig_pie = go.Figure(go.Pie(
+                    labels=["Legítima", "Phishing"],
+                    values=[status_counts.get(0, 0), status_counts.get(1, 0)],
+                    marker=dict(colors=['#38eb29', '#ff3131']),
+                    hole=0.4
+                ))
+
+                fig_pie.update_layout(
+                    title=f"Proporción de Status para Web Traffic {selected_web_traffic}"
+                )
+
+                st.plotly_chart(fig_pie)
 
             # Llamar a la función dentro del tablero de Streamlit
             web_traffic_visualization(data)
 
-        # Subpestaña Gráfico 5
+        # Subpestaña Gráfico 4: domain_age
         with external_tab[4]:
-            # Función para visualización interactiva de Domain Age y Status
+        
             def categorize_domain_age(value, threshold):
                 if value == -2:
                     return 'Error (-2)'
@@ -676,11 +685,12 @@ try:
             # Crear la columna 'domain_age_category'
             data['domain_age_category'] = data['domain_age'].apply(categorize_domain_age, args=(threshold,))
 
+            # Función para visualización interactiva de Domain Age y Status
             def domain_age_visualization(data):
-                st.subheader("Visualización Interactiva de Domain Age y Status")
+                st.subheader("Visualización de Domain Age con Status")
 
                 st.write("""
-                **Función:** Analizar la relación entre la edad del dominio (`domain_age`) y el status de las URLs.
+                **Función:** Extrae el nombre de dominio de la URL y envía una petición a una API externa para obtener la edad del dominio.
 
                 **Valores:**
                 - **-2:** Cuando la edad del dominio no está disponible.
@@ -688,64 +698,62 @@ try:
                 - **Integer:** La edad real del dominio en años, si se ha recuperado correctamente.
                 """)
 
-                # --- Gráfico de barras agrupadas: Domain Age y Status ---
+                # --- Gráfico de barras agrupadas: Distribución de Domain Age en función de Status ---
                 fig_bar = px.histogram(
                     data_frame=data,
                     x="domain_age_category",
                     color="status",
                     barmode="group",
-                    title="Domain Age de las URLs y Status",
+                    title="Distribución de Domain Age en función de Status",
                     labels={"domain_age_category": "Domain Age", "status": "Status", "count": "Cantidad de URLs"},
                     color_discrete_map={0: '#38eb29', 1: '#ff3131'}  # Colores para status
                 )
+                fig_bar.for_each_trace(lambda t: t.update(name = {'0': 'Legítima', '1': 'Phishing'}[str(t.name)]))
                 st.plotly_chart(fig_bar)
 
-                # --- Análisis de Status por Domain Age ---
-                fig = go.Figure()
+                # Selección interactiva de Domain Age
+                selected_domain_age = st.selectbox("Selecciona la categoría de Domain Age:", data['domain_age_category'].unique(), key="domain_age_selection")
 
-                # Proporción de status para cada categoría de Domain Age
-                for category in data['domain_age_category'].unique():
-                    subset = data[data['domain_age_category'] == category]
-                    recuento = subset['status'].value_counts()
-                    fig.add_trace(go.Pie(
-                        labels=["Legítima", "Phishing"],
-                        values=recuento,
-                        name=f"Domain Age {category}",
-                        marker=dict(colors=['#38eb29', '#ff3131']),
-                        hole=0.4,
-                        domain=dict(x=[0, 0.5] if category in ['Error (-2)', 'Rango bajo'] else [0.5, 1])
-                    ))
+                # Filtrar datos según la selección
+                subset = data[data['domain_age_category'] == selected_domain_age]
+                status_counts = subset['status'].value_counts(normalize=True) * 100
 
-                # Configuración del layout
+                # Crear gráfico de sectores
+                fig = go.Figure(go.Pie(
+                    labels=["Legítima", "Phishing"],
+                    values=[status_counts.get(0, 0), status_counts.get(1, 0)],
+                    marker=dict(colors=['#38eb29', '#ff3131']),
+                    hole=0.4
+                ))
+
                 fig.update_layout(
-                    title="Proporción de Status por Domain Age",
-                    grid=dict(rows=1, columns=2),
-                    annotations=[
-                        dict(text="Error (-2)", x=0.12, y=0.5, font_size=12, showarrow=False),
-                        dict(text="Error (-1)", x=0.37, y=0.5, font_size=12, showarrow=False),
-                        dict(text="Bajo", x=0.62, y=0.5, font_size=12, showarrow=False),
-                        dict(text="Alto", x=0.87, y=0.5, font_size=12, showarrow=False)
-                    ]
+                    title=f"Proporción de Status para Domain Age {selected_domain_age}"
                 )
+
                 st.plotly_chart(fig)
 
             # Llamar a la función con los datos cargados en el tablero
             domain_age_visualization(data)
 
-        # Subpestaña Gráfico 6
+        # Subpestaña Gráfico 5: ip
         with external_tab[5]:
 
             # Función para visualización interactiva de IP y Status
             def ip_visualization(data):
-                st.subheader("Visualización Interactiva de IP y Status")
+                st.subheader("Visualización de IP con Status")
 
                 st.write("""
-                **Función:** Analizar la relación entre la presencia de una dirección IP (`ip`) y el status de las URLs.
+                **Función:** Indica si aparece una dirección IP en el hostname.
 
                 **Valores:**
                 - **0:** Indica que la URL no utiliza una dirección IP como dominio.
                 - **1:** Indica que la URL utiliza una dirección IP como dominio.
                 """)
+
+                # --- Gráfico de sectores: Proporción de IP en las URLs ---
+                fig_pie = px.pie(data, names="ip", title="Proporción de IP en las URLs",
+                                color="ip", color_discrete_map={0: '#1498b7', 1: '#ffcc00'})
+                st.plotly_chart(fig_pie)
 
                 # --- Gráfico de barras agrupadas: IP y Status ---
                 fig_bar = px.histogram(
@@ -753,111 +761,108 @@ try:
                     x="ip",
                     color="status",
                     barmode="group",
-                    title="Distribución de IP de las URLs y Status",
+                    title="Distribución de IP en función de Status",
                     labels={"ip": "IP", "status": "Status", "count": "Cantidad de URLs"},
                     color_discrete_map={0: '#38eb29', 1: '#ff3131'}  # Colores para status
                 )
+                fig_bar.for_each_trace(lambda t: t.update(name = {'0': 'Legítima', '1': 'Phishing'}[str(t.name)]))
                 st.plotly_chart(fig_bar)
 
-                # --- Proporción de Status por IP ---
-                ip_0 = data[data["ip"] == 0]
-                ip_1 = data[data["ip"] == 1]
+                # Selección interactiva de IP
+                selected_ip = st.selectbox("Selecciona el valor de IP:", [0, 1], key="ip_selection")
 
-                recuento_ip_0 = ip_0["status"].value_counts()
-                recuento_ip_1 = ip_1["status"].value_counts()
+                # Filtrar datos según la selección
+                subset = data[data['ip'] == selected_ip]
+                status_counts = subset['status'].value_counts(normalize=True) * 100
 
-                fig = go.Figure()
-                fig.add_trace(go.Pie(
+                # Crear gráfico de sectores
+                fig_pie = go.Figure(go.Pie(
                     labels=["Legítima", "Phishing"],
-                    values=recuento_ip_0,
-                    name="IP = 0",
+                    values=[status_counts.get(0, 0), status_counts.get(1, 0)],
                     marker=dict(colors=['#38eb29', '#ff3131']),
                     hole=0.4
                 ))
 
-                fig.add_trace(go.Pie(
-                    labels=["Phishing", "Legítima"],
-                    values=recuento_ip_1,
-                    name="IP = 1",
-                    marker=dict(colors=['#ff3131', '#38eb29']),
-                    hole=0.4
-                ))
-
-                # Configuración del layout
-                fig.update_layout(
-                    title="Proporción de Status por IP",
-                    annotations=[
-                        dict(text="IP = 0", x=0.18, y=0.5, font_size=12, showarrow=False),
-                        dict(text="IP = 1", x=0.82, y=0.5, font_size=12, showarrow=False)
-                    ]
+                fig_pie.update_layout(
+                    title=f"Proporción de Status para IP {selected_ip}"
                 )
-                st.plotly_chart(fig)
+
+                st.plotly_chart(fig_pie)
 
             # Llamar a la función con los datos cargados en el tablero
             ip_visualization(data)
 
-        # Subpestaña Gráfico 7
+        # Subpestaña Gráfico 6: domain_registration_length
         with external_tab[6]:
+
+            def categorize_domain_registration_length(value, threshold):
+                if value == -1:
+                    return 'Error (-1)'
+                elif value == 0:
+                    return 'No disponible (0)'
+                elif value <= threshold:
+                    return 'Rango bajo'
+                else:
+                    return 'Rango alto'
+
+            # Calcular el percentil 50 para definir el umbral entre rango bajo y alto
+            threshold = np.percentile(data['domain_registration_length'][data['domain_registration_length'] > 0], 50)
+
+            # Crear la columna 'domain_registration_length_category'
+            data['domain_registration_length_category'] = data['domain_registration_length'].apply(categorize_domain_registration_length, args=(threshold,))
+
             # Función para visualización interactiva de Domain Registration Length y Status
             def domain_registration_length_visualization(data):
-                st.subheader("Visualización Interactiva de Domain Registration Length y Status")
+                st.subheader("Visualización de Domain Registration Length con Status")
 
                 st.write("""
-                **Función:** Analizar la relación entre el tiempo de registro del dominio (`domain_registration_length`) y el status de las URLs.
+                **Función:** Indica la diferencia en días entre la fecha de expiración del dominio y la fecha actual, indicando cuánto tiempo lleva registrado el dominio.
 
                 **Valores:**
                 - **0:** El dominio no tiene fecha de expiración o la información no está disponible.
                 - **-1:** Hubo un error durante la búsqueda en Whois.
-                - **Integer positivo:** Días restantes antes de la expiración del dominio.
+                - **Integer positivo:** Si el dominio tiene fecha de expiración, la función calcula el número de días desde la fecha actual.
                 """)
+
+                # --- Gráfico de sectores: Proporción de Domain Registration Length en las URLs ---
+                fig_pie = px.pie(data, names="domain_registration_length_category", title="Proporción de Domain Registration Length en las URLs",
+                                color="domain_registration_length_category", color_discrete_map={'Error (-1)': '#d3d3d3', 'No disponible (0)': '#1498b7', 'Rango bajo': '#ffcc00', 'Rango alto': '#ff3131'})
+
+                st.plotly_chart(fig_pie)
 
                 # --- Gráfico de barras agrupadas: Domain Registration Length y Status ---
                 fig_bar = px.histogram(
                     data_frame=data,
-                    x="domain_registration_length",
+                    x="domain_registration_length_category",
                     color="status",
                     barmode="group",
-                    title="Domain Registration Length de las URLs y Status",
-                    labels={"domain_registration_length": "Días hasta la Expiración", "status": "Status", "count": "Cantidad de URLs"},
+                    title="Distribución de Domain Registration Length en función de Status",
+                    labels={"domain_registration_length_category": "Domain Registration Length", "status": "Status", "count": "Cantidad de URLs"},
                     color_discrete_map={0: '#38eb29', 1: '#ff3131'}  # Colores para status
                 )
+                fig_bar.for_each_trace(lambda t: t.update(name = {'0': 'Legítima', '1': 'Phishing'}[str(t.name)]))
                 st.plotly_chart(fig_bar)
 
-                # --- Proporción de Status por Domain Registration Length ---
-                valid_length = data[data["domain_registration_length"] > 0]
-                short_length = valid_length[valid_length["domain_registration_length"] <= valid_length["domain_registration_length"].median()]
-                long_length = valid_length[valid_length["domain_registration_length"] > valid_length["domain_registration_length"].median()]
+                # Selección interactiva de Domain Registration Length
+                selected_domain_registration_length = st.selectbox("Selecciona la categoría de Domain Registration Length:", data['domain_registration_length_category'].unique(), key="domain_registration_length_selection")
 
-                recuento_short = short_length["status"].value_counts()
-                recuento_long = long_length["status"].value_counts()
+                # Filtrar datos según la selección
+                subset = data[data['domain_registration_length_category'] == selected_domain_registration_length]
+                status_counts = subset['status'].value_counts(normalize=True) * 100
 
-                fig = go.Figure()
-                fig.add_trace(go.Pie(
-                    labels=["Phishing", "Legítima"],
-                    values=recuento_short,
-                    name="Tiempo Corto",
-                    marker=dict(colors=['#ff3131', '#38eb29']),
-                    hole=0.4
-                ))
-
-                fig.add_trace(go.Pie(
+                # Crear gráfico de sectores
+                fig = go.Figure(go.Pie(
                     labels=["Legítima", "Phishing"],
-                    values=recuento_long,
-                    name="Tiempo Largo",
+                    values=[status_counts.get(0, 0), status_counts.get(1, 0)],
                     marker=dict(colors=['#38eb29', '#ff3131']),
                     hole=0.4
                 ))
 
-                # Configuración del layout
                 fig.update_layout(
-                    title="Proporción de Status por Domain Registration Length",
-                    annotations=[
-                        dict(text="Corto", x=0.18, y=0.5, font_size=12, showarrow=False),
-                        dict(text="Largo", x=0.82, y=0.5, font_size=12, showarrow=False)
-                    ]
+                    title=f"Proporción de Status para Domain Registration Length {selected_domain_registration_length}"
                 )
-                st.plotly_chart(fig)
 
+                st.plotly_chart(fig)
 
             # Llamar a la función con los datos cargados en el tablero
             domain_registration_length_visualization(data)
@@ -987,4 +992,5 @@ try:
 
 except Exception as e:
     st.error(f"Error al cargar los datos: {e}")
+    st.write("Detalles del error:", e)
 
