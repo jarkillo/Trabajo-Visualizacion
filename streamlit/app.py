@@ -91,14 +91,18 @@ try:
             selected_variable = st.selectbox("Selecciona una variable:", sintax_url_columns, key="dynamic_analysis_var")
 
             if selected_variable:
-                # Gráfico de barras inicial
-                st.write(f"### Gráfico de Barras: {selected_variable} vs status")
-                fig1, ax1 = plt.subplots(figsize=(10, 6))
-                sns.countplot(x=selected_variable, hue='status', data=data, ax=ax1, palette="viridis")
-                ax1.set_title(f"Distribución de {selected_variable} por Status")
-                ax1.set_xlabel(selected_variable)
-                ax1.set_ylabel("Cantidad de Datos")
-                st.pyplot(fig1)
+                # Gráfico 1: Gráfico de barras inicial (variable seleccionada vs status)
+                fig_bar1 = px.histogram(
+                    data_frame=data,
+                    x=selected_variable,  # La variable seleccionada
+                    color="status",  # Diferenciación por status
+                    barmode="group",
+                    title=f"Distribución de {selected_variable} por Status",
+                    labels={"status": "Status", selected_variable: selected_variable, "count": "Cantidad de URLs"},
+                    color_discrete_map={0: '#38eb29', 1: '#ff3131'}  # Verde y rojo
+                )
+                st.plotly_chart(fig_bar1)
+
 
                 if data[selected_variable].dtype in ['float64', 'int64']:
                     # Elección entre umbral personalizado o intervalos iguales
@@ -120,14 +124,17 @@ try:
                                                     value=float(data[selected_variable].mean()))
                         data[f"{selected_variable}_binarized"] = (data[selected_variable] >= threshold).astype(int)
 
-                    # Gráfico de barras binarizado
-                    st.write(f"### Gráfico de Barras: {selected_variable} binarizado vs status")
-                    fig2, ax2 = plt.subplots(figsize=(10, 6))
-                    sns.countplot(x=f"{selected_variable}_binarized", hue='status', data=data, ax=ax2, palette="viridis")
-                    ax2.set_title(f"{selected_variable} Binarizado por Status")
-                    ax2.set_xlabel(f"{selected_variable} Binarizado")
-                    ax2.set_ylabel("Cantidad de Datos")
-                    st.pyplot(fig2)
+                    # Gráfico 2: Gráfico de barras binarizado (variable seleccionada binarizada vs status)
+                    fig_bar2 = px.histogram(
+                        data_frame=data,
+                        x=f"{selected_variable}_binarized",  # Variable binarizada
+                        color="status",  # Diferenciación por status
+                        barmode="group",
+                        title=f"{selected_variable} Binarizado por Status",
+                        labels={"status": "Status", f"{selected_variable}_binarized": f"{selected_variable} Binarizado", "count": "Cantidad de URLs"},
+                        color_discrete_map={0: '#38eb29', 1: '#ff3131'}  # Verde y rojo
+                    )
+                    st.plotly_chart(fig_bar2)
 
             else:
                 st.warning("Por favor, selecciona una variable para visualizar los gráficos.")
@@ -162,22 +169,53 @@ try:
                     else:
                         data['phishing_score'] += (data[var] >= threshold).astype(int)
 
-                # Gráfico 1: Comparación phishing_score con status
-                st.write("### Comparación entre phishing_score y status")
-                fig3, ax3 = plt.subplots(figsize=(10, 6))
-                phishing_counts = data.groupby(['phishing_score', 'status']).size().reset_index(name='counts')
-                sns.barplot(x='phishing_score', y='counts', hue='status', data=phishing_counts, ax=ax3, palette="viridis")
-                ax3.set_title("Distribución de Phishing Score por Status")
-                ax3.set_xlabel("Phishing Score")
-                ax3.set_ylabel("Cantidad de Registros")
-                st.pyplot(fig3)
+                # Asegurar que 'status' sea categórica
+                data['status'] = data['status'].astype('category')
 
-                # Gráfico 2: Mapa de calor de phishing_score con status
+                # Gráfico de phishing_score vs status
+                st.write("### Comparación entre phishing_score y status")
+                phishing_counts = data.groupby(['phishing_score', 'status']).size().reset_index(name='counts')
+
+                fig_bar3 = px.bar(
+                    phishing_counts,
+                    x="phishing_score",
+                    y="counts",
+                    color="status",
+                    barmode="relative", # Barras apiladas
+                    title="Distribución de Phishing Score por Status",
+                    labels={"phishing_score": "Phishing Score", "counts": "Cantidad de Registros", "status": "Status"},
+                    category_orders={"status": [0, 1]},  
+                    color_discrete_map={0: '#38eb29', 1: '#ff3131'}  # Verde y rojo
+                )
+
+                st.plotly_chart(fig_bar3)
+
+                # Mapa de calor: Correlación de phishing_score con status usando rojo y azul vivos con valores más visibles
                 st.write("### Mapa de Calor: Phishing Score vs Status")
-                fig4, ax4 = plt.subplots(figsize=(8, 6))
+
+                # Calcular la correlación
                 heatmap_data = data[['phishing_score', 'status']].corr()
-                sns.heatmap(heatmap_data, annot=True, cmap="coolwarm", ax=ax4)
-                st.pyplot(fig4)
+
+                # Crear el mapa de calor con colores vivos
+                fig_heatmap = px.imshow(
+                    heatmap_data,
+                    color_continuous_scale=["#ff6961", "#ffffff", "#61b6ff"],  # Rojo vivo, blanco, azul vivo
+                    title="Mapa de Calor: Phishing Score vs Status",
+                    labels={"color": "Correlación"},
+                    x=heatmap_data.columns, 
+                    y=heatmap_data.columns,
+                    text_auto=".2f"  # Mostrar valores con 2 decimales en las celdas
+                )
+
+                # Cambiar el color de texto para que sea visible sobre el fondo
+                fig_heatmap.update_traces(
+                    textfont=dict(color="white"),  # Color blanco para los valores
+                    zmin=-1,  # Correlación negativa máxima
+                    zmax=1    # Correlación positiva máxima
+                )
+
+                # Mostrar el gráfico
+                st.plotly_chart(fig_heatmap)
             else:
                 st.warning("Por favor, selecciona al menos una variable para generar el phishing_score.")
 
