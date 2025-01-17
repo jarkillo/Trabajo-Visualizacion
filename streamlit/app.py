@@ -27,7 +27,7 @@ try:
     st.title("Dashboard de Phishing")
 
     # Crear las pestañas principales
-    main_tab = st.tabs(["Sintaxis", "Contenido", "Consultas externas"])
+    main_tab = st.tabs(["Sintaxis", "Contenido", "Consultas externas", "Resultados de Modelos"])
 
     # Pestaña Sintaxis
     with main_tab[0]:
@@ -57,23 +57,22 @@ try:
         # Subpestaña Gráfico 0: Análisis Inicial
         with syntax_tab[0]:
             st.subheader("Análisis inicial")
-            st.write("Resumen Estadístico")
 
             # Resumen Estadístico Interactivo
-            with st.expander("Resumen Estadístico Interactivo"):
-                st.subheader("Resumen Estadístico de Variables Seleccionadas")
 
-                # Selección de variables
-                selected_vars_summary = st.multiselect(
-                    "Selecciona variables para el resumen estadístico:",
-                    variables_sintaxis
-                )
+            st.subheader("Resumen Estadístico de Variables Seleccionadas")
 
-                if selected_vars_summary:
-                    summary = data[selected_vars_summary + ['status']].groupby('status').describe().transpose()
-                    st.write(summary)
-                else:
-                    st.warning("Por favor, selecciona al menos una variable para ver el resumen estadístico.")
+            # Selección de variables
+            selected_vars_summary = st.multiselect(
+                "Selecciona variables para el resumen estadístico:",
+                variables_sintaxis
+            )
+
+            if selected_vars_summary:
+                summary = data[selected_vars_summary + ['status']].groupby('status').describe().transpose()
+                st.write(summary)
+            else:
+                st.warning("Por favor, selecciona al menos una variable para ver el resumen estadístico.")
 
        # Subpestaña Gráfico 1
 
@@ -181,9 +180,10 @@ try:
                 'avg_word_path': 11.0, 'phish_hints': 1.0, 'brand_in_subdomain': 1.0,
                 'brand_in_path': 1.0, 'suspecious_tld': 1.0, 'statistical_report': 1.0
             }
-
-            selected_variables = st.multiselect("Selecciona las variables:", default_thresholds.keys(), default=list(default_thresholds.keys()), key="phishing_score_vars")
-            thresholds = {var: st.number_input(f"Threshold para {var}", min_value=0.0, value=float(default_thresholds[var])) for var in selected_variables}
+            with st.expander("Configuración de Phishing Score"):
+                st.write("Configura las variables y umbrales para el cálculo del phishing_score.")
+                selected_variables = st.multiselect("Selecciona las variables:", default_thresholds.keys(), default=list(default_thresholds.keys()), key="phishing_score_vars")
+                thresholds = {var: st.number_input(f"Threshold para {var}", min_value=0.0, value=float(default_thresholds[var])) for var in selected_variables}
 
             if selected_variables:
                 # Crear phishing_score
@@ -196,6 +196,7 @@ try:
 
                 # Asegurar que 'status' sea categórica
                 data['status'] = data['status'].astype('category')
+
 
                 # Gráfico de phishing_score vs status
                 st.write("### Comparación entre phishing_score y status")
@@ -829,6 +830,128 @@ try:
             # Llamar a la función con los datos cargados en el tablero
             domain_registration_length_visualization(data)
 
+    # Pestaña de Resultados de Modelos
+    with main_tab[3]:
+        st.header("Resultados de Modelos")
+        st.write("Visualiza los resultados de la selección de características y evaluación de modelos.")
+
+        # Datos de la tabla
+        import pandas as pd
+
+        # Crea el DataFrame con los datos proporcionados
+        data_modelos = pd.DataFrame({
+            "Método Selección": ["manual", "manual", "importancia", "L1", "importancia", "manual", "L1", "importancia", "L1"],
+            "Modelo": ["XGBoost", "Gradient Boosting", "XGBoost", "XGBoost", "Gradient Boosting", "Random Forest", "Gradient Boosting", "Random Forest", "Random Forest"],
+            "Modo": ["GridSearch"] * 9,
+            "Accuracy Validation": [0.966390, 0.967311, 0.956722, 0.966851, 0.961326, 0.964088, 0.970534, 0.954420, 0.959945],
+            "Accuracy Test": [0.971455, 0.961455, 0.967311, 0.966390, 0.966390, 0.965009, 0.963168, 0.962247, 0.960866],
+            "Accuracy-difference": [0.005065, 0.004144, 0.010589, -0.000461, 0.005064, 0.000921, -0.007366, 0.007827, 0.000921]
+        })
+
+        # Mostrar la tabla interactiva
+        with st.expander("Resumen Estadístico de las Métricas"):
+            st.subheader("Tabla de Resultados de Modelos")
+            st.dataframe(data_modelos, use_container_width=True)
+
+            # Opcional: Descargar la tabla como archivo CSV
+            @st.cache_data
+            def convertir_csv(df):
+                return df.to_csv(index=False).encode('utf-8')
+
+            csv = convertir_csv(data_modelos)
+
+            st.download_button(
+                label="Descargar Tabla en CSV",
+                data=csv,
+                file_name="resultados_modelos.csv",
+                mime="text/csv"
+            )
+
+        # Resumen estadístico
+        with st.expander("Resumen Estadístico de las Métricas"):
+            st.subheader("Resumen Estadístico de las Métricas")
+            st.write(data_modelos[["Accuracy Validation", "Accuracy Test", "Accuracy-difference"]].describe())
+
+            # Gráfico comparativo de métricas por modelo
+            melted_data = data_modelos.melt(
+                id_vars=["Modelo", "Método Selección"],
+                value_vars=["Accuracy Validation", "Accuracy Test"],
+                var_name="Métrica",
+                value_name="Valor"
+            )
+
+        with st.expander("Comparación de Métricas por Modelo"):
+            selected_method = st.selectbox(
+                "Selecciona el Método de Selección:",
+                options=data_modelos["Método Selección"].unique(),
+                index=0
+            )
+
+            filtered_data = melted_data[melted_data["Método Selección"] == selected_method]
+
+            # Definir una paleta de colores vivos
+            colors_vivos = {
+                "F1-Macro Validation": "#FF6347",  # Rojo tomate
+                "Accuracy Validation": "#FFD700",  # Amarillo
+                "F1-Macro Test": "#1E90FF",       # Azul brillante
+                "Accuracy Test": "#32CD32"        # Verde lima
+            }
+
+            fig_line_metrics_improved = px.scatter(
+                filtered_data,
+                x="Modelo",
+                y="Valor",
+                color="Métrica",
+                size="Valor",
+                size_max=15,
+                title=f"Comparación de Métricas por Modelo (Método: {selected_method})",
+                labels={"Valor": "Puntuación", "Métrica": "Métrica", "Modelo": "Modelo"},
+                color_discrete_map=colors_vivos  # Aplicar los colores vivos
+            )
+
+            for metric in filtered_data["Métrica"].unique():
+                metric_data = filtered_data[filtered_data["Métrica"] == metric]
+                fig_line_metrics_improved.add_scatter(
+                    x=metric_data["Modelo"],
+                    y=metric_data["Valor"],
+                    mode="lines",
+                    line=dict(width=2, color=colors_vivos[metric]),  # Usar los mismos colores para las líneas
+                    name=f"Línea: {metric}",
+                    showlegend=False
+                )
+
+            st.plotly_chart(fig_line_metrics_improved)
+
+
+        with st.expander("Diferencia en Accuracy entre Validación y Test"):
+            fig_line_accuracy_diff = px.line(
+                data_modelos,
+                x="Modelo",
+                y="Accuracy-difference",
+                color="Método Selección",
+                markers=True,
+                title="Diferencia en Accuracy entre Validación y Test por Modelo",
+                labels={"Accuracy-difference": "Diferencia en Accuracy", "Modelo": "Modelo"},
+                color_discrete_sequence=["#FF4500", "#00FA9A", "#1E90FF"]  # Colores vivos para cada método
+            )
+
+            fig_line_accuracy_diff.update_traces(
+                marker=dict(size=12),
+                line=dict(width=3)  # Líneas más gruesas para mejor visibilidad
+            )
+
+            st.plotly_chart(fig_line_accuracy_diff)
+
+
+
+        with st.expander("Mejor Modelo según Accuracy Test"):
+    # Seleccionar el mejor modelo según Accuracy Test
+            best_model = data_modelos.loc[data_modelos["Accuracy Test"].idxmax()]
+
+            # Mostrar los detalles del mejor modelo
+            st.write(f"**Modelo:** {best_model['Modelo']}")
+            st.write(f"**Método de Selección:** {best_model['Método Selección']}")
+            st.write(f"**Accuracy Test:** {best_model['Accuracy Test']:.3f}")
 
 except Exception as e:
     st.error(f"Error al cargar los datos: {e}")
