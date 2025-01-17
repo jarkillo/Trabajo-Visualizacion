@@ -281,7 +281,7 @@ try:
     with main_tab[2]:
         st.header("Exploración de Contenido")
 
-        content_tab = st.tabs(["Análisis Inicial", "Análisis de Distribución y Comparación", "Análisis de Relación Bivariada"])
+        content_tab = st.tabs(["Análisis Inicial", "Análisis de Distribución y Comparación"])
 
         # Subpestaña Gráfico 1
         with content_tab[0]:
@@ -376,57 +376,6 @@ try:
                         st.pyplot(box_fig)
             else:
                 st.warning("Por favor, selecciona al menos una variable y un estado para analizar la distribución.")
-
-        # Subpestaña Gráfico 3
-        with content_tab[2]:
-            st.subheader("Análisis de Relación Bivariada")
-            st.write("Aquí podemos explorar relaciones bivariadas entre las variables y status.")
-            
-            # Filtro por status
-            status_filter = st.multiselect(
-                "Selecciona los estados (status) para filtrar:",
-                data['status'].unique(),
-                default=data['status'].unique(),
-                key="status_filter_bivariate"
-            )
-
-            # Selección de variables para el análisis bivariado
-            selected_x_var = st.selectbox(
-                "Selecciona una variable para el eje X:",
-                ['domain_in_title', 'ratio_digits_host', 'nb_hyperlinks', 'safe_anchor']
-            )
-
-            selected_y_var = st.selectbox(
-                "Selecciona una variable para el eje Y:",
-                ['domain_in_title', 'ratio_digits_host', 'nb_hyperlinks', 'safe_anchor']
-            )
-
-            plot_type = st.radio(
-                "Selecciona el tipo de gráfico:",
-                ['Gráfico de Dispersión', 'Gráfico de Líneas']
-            )
-
-            # Opción para añadir una línea de regresión
-            add_regression = st.checkbox("Añadir línea de regresión")
-
-            if selected_x_var and selected_y_var and status_filter:
-                filtered_data = data[data['status'].isin(status_filter)]
-                st.write(f"Relación entre {selected_x_var} y {selected_y_var} por Status")
-
-                plot_fig = plt.figure(figsize=(10, 6))
-                if plot_type == 'Gráfico de Dispersión':
-                    sns.scatterplot(data=filtered_data, x=selected_x_var, y=selected_y_var, hue='status', palette="coolwarm", alpha=0.7)
-                    if add_regression:
-                        sns.regplot(data=filtered_data, x=selected_x_var, y=selected_y_var, scatter=False, color='red')
-                elif plot_type == 'Gráfico de Líneas':
-                    sns.lineplot(data=filtered_data, x=selected_x_var, y=selected_y_var, hue='status', palette="coolwarm")
-
-                plt.title(f"Relación entre {selected_x_var} y {selected_y_var} por Status")
-                plt.xlabel(selected_x_var)
-                plt.ylabel(selected_y_var)
-                st.pyplot(plot_fig)
-            else:
-                st.warning("Por favor, selecciona variables y estados para ambos ejes X e Y.")
 
     # Pestaña Consultas externas
     with main_tab[3]:
